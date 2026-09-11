@@ -59,8 +59,9 @@ export default function HomePage() {
         </section>
 
         <div className="h-grid" id="create">
+        <section>
+        <h2 className="h-col-title">{t("host.newSession")}</h2>
         <form className="s-card s-card--glow h-form" onSubmit={onSubmit}>
-          <h2>{t("host.newSession")}</h2>
           <label>
             {t("host.sessionTitle")}
             <input className="s-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("host.sessionTitlePlaceholder")} maxLength={80} required />
@@ -84,9 +85,10 @@ export default function HomePage() {
             {busy ? t("common.loading") : t("host.create")}
           </button>
         </form>
+        </section>
 
         <section>
-          <h2 style={{ marginBottom: 14 }}>{t("host.mySessions")}</h2>
+          <h2 className="h-col-title">{t("host.mySessions")}</h2>
           {sessions.length === 0 ? (
             <div className="s-card h-empty">{t("host.noSessions")}</div>
           ) : (

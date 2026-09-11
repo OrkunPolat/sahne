@@ -180,3 +180,8 @@ a.s-btn { text-decoration: none; }
 .h-list-item { flex-wrap: wrap; }
 .h-list-item .grow { flex: 1 1 160px; }
 @media (max-width: 760px) { .h-site-header__inner { gap: 14px; } .h-site-header__ctl { gap: 8px; } }
+.h-col-title { font-size: 1.25rem; margin-bottom: 14px; }
+.h-list-item { flex-wrap: nowrap; }
+.h-list-item .grow { flex: 1 1 0; }
+.h-list-item .h-actions { flex-wrap: nowrap; }
+@media (max-width: 560px) { .h-list-item { flex-wrap: wrap; } .h-list-item .grow { flex-basis: 140px; } }
