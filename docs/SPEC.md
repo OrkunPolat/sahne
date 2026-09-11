@@ -120,7 +120,7 @@ Token grupları: `bg.base / bg.elevated / bg.glass`, `fg.primary / fg.muted`, `a
 
 ### Cevap butonları (renk + şekil, zarif)
 
-Kahoot'un 4 şekil desenini korur: ▲ ◆ ● ■. Renkler her temada palete uydurulmuş, mat/derin sürümler; parlak doygun değil. Her temada 4'ünün birbirinden ve zeminden ayırt edilebilirliği kontrast testinden geçer (WCAG AA metin, 3:1 şekil). Renk körlüğü için şekil her zaman görünür.
+Kahoot'un 4 şekil desenini korur: ▲ ◆ ● ■. Renkler her temada palete uydurulmuş, mat/derin sürümler; parlak doygun değil. Her temada kontrast testinden geçer: `packages/ui/src/contrast.test.ts` (etiket 4.5:1, buton/zemin 3:1, butonlar arası ton farkı ≥40°). Renk körlüğü için şekil her zaman görünür.
 
 ## 7. i18n
 
@@ -132,9 +132,9 @@ Kahoot'un 4 şekil desenini korur: ▲ ◆ ● ■. Renkler her temada palete uy
 
 ## 8. Fazlar (bağımlılık sırası, süre tahmini yok)
 
-1. **Temel** — monorepo, `protocol` + `engine` (puanlama testli), Postgres şema, ws sunucusu, host'ta oturum oluştur + katılımcı katıl + çoktan seçmeli tek slayt uçtan uca. Tema/dil altyapısı bu fazda kurulur, tek tema ile.
-2. **Slayt seti + game döngüsü** — kalan slayt tipleri, sayaç, reveal, liderlik, podyum, yeniden bağlanma.
-3. **Premium cila** — 4 tema tamam, hareket, tipografi, büyük ekran/telefon ayrımı, kontrast testleri, EN sözlük tamam.
+1. ✅ **Temel** — monorepo, `protocol` + `engine` (puanlama testli), Postgres şema, ws sunucusu, host'ta oturum oluştur + katılımcı katıl + çoktan seçmeli tek slayt uçtan uca. Tema/dil altyapısı bu fazda kurulur, tek tema ile.
+2. ✅ **Slayt seti + game döngüsü** — kalan slayt tipleri, sayaç, reveal, liderlik, podyum, yeniden bağlanma.
+3. ✅ **Premium cila** — 4 tema tamam, hareket, tipografi, büyük ekran/telefon ayrımı, kontrast testleri, EN sözlük tamam.
 4. **Opsiyonel** — export, AI'dan quiz üretimi, takım modu.
 
 ## 9. Açık kararlar

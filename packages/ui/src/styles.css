@@ -33,7 +33,7 @@
   --answer-1: #A83C39; --answer-1-fg: #FFF4F2;
   --answer-2: #2C62A6; --answer-2-fg: #EEF4FF;
   --answer-3: #C99A2E; --answer-3-fg: #1A1405;
-  --answer-4: #2A8462; --answer-4-fg: #ECFFF6;
+  --answer-4: #236F52; --answer-4-fg: #ECFFF6;
 }
 
 /* ---- obsidian-neon: siyaha yakın + elektrik mavisi/mor ---- */
@@ -56,7 +56,7 @@
   --answer-1: #B92E47; --answer-1-fg: #FFF1F4;
   --answer-2: #3A62D6; --answer-2-fg: #EEF3FF;
   --answer-3: #D6A72B; --answer-3-fg: #171203;
-  --answer-4: #25976F; --answer-4-fg: #EAFFF5;
+  --answer-4: #1E7556; --answer-4-fg: #EAFFF5;
 }
 
 /* ---- cream-forest: açık krem + orman yeşili + bakır ---- */
@@ -68,7 +68,7 @@
   --bg-gradient: radial-gradient(1000px 700px at 10% -10%, rgba(30,90,63,0.10), transparent 60%),
                  radial-gradient(800px 600px at 110% 110%, rgba(180,102,58,0.12), transparent 60%);
   --fg: #1F2A24;
-  --fg-muted: #66716B;
+  --fg-muted: #5B665F;
   --accent: #1E5A3F;
   --accent-fg: #F7FBF8;
   --accent-soft: rgba(30, 90, 63, 0.12);
@@ -78,7 +78,7 @@
   --glow: 0 0 0 1px rgba(30,90,63,0.18), 0 20px 50px -24px rgba(31,42,36,0.35);
   --answer-1: #9E3B35; --answer-1-fg: #FFF4F2;
   --answer-2: #2F5C9A; --answer-2-fg: #EEF4FF;
-  --answer-3: #A5700F; --answer-3-fg: #FFF8E6;
+  --answer-3: #856A0A; --answer-3-fg: #FFF8E6;
   --answer-4: #2A7A5A; --answer-4-fg: #ECFFF6;
 }
 
@@ -101,8 +101,8 @@
   --glow: 0 0 0 1px rgba(232,207,163,0.25), 0 20px 60px -20px rgba(232,207,163,0.3);
   --answer-1: #B54A3A; --answer-1-fg: #FFF3F0;
   --answer-2: #4A6FA5; --answer-2-fg: #EEF3FF;
-  --answer-3: #D3A64A; --answer-3-fg: #1F1604;
-  --answer-4: #3B8A69; --answer-4-fg: #EAFFF5;
+  --answer-3: #CDB238; --answer-3-fg: #1F1604;
+  --answer-4: #2E7A5B; --answer-4-fg: #EAFFF5;
 }
 
 /* ---- base ---- */

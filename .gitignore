@@ -5,3 +5,4 @@ dist
 .env.local
 *.tsbuildinfo
 .turbo
+.next-build

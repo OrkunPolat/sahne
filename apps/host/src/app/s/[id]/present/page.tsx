@@ -157,7 +157,9 @@ export default function PresentPage() {
                 <button type="button" className="s-btn" onClick={actions.prev} disabled={snap.currentSlideIdx <= 0}>← {t("common.prev")}</button>
                 <button type="button" className="s-btn" onClick={actions.lock} disabled={slidePhase !== "open"}>{t("common.lock")}</button>
                 <button type="button" className="s-btn s-btn--primary" onClick={actions.reveal} disabled={!slidePhase || slidePhase === "revealed"}>{t("common.reveal")}</button>
-                <button type="button" className="s-btn s-btn--primary" onClick={actions.next} disabled={snap.currentSlideIdx >= snap.slides.length - 1}>{t("common.next")} →</button>
+                <button type="button" className="s-btn s-btn--primary" onClick={actions.next}>
+                  {snap.currentSlideIdx >= snap.slides.length - 1 ? t("host.podium") : t("common.next")} →
+                </button>
               </>
             )}
             <button type="button" className="s-btn s-btn--ghost" onClick={actions.end}>{t("common.end")}</button>
