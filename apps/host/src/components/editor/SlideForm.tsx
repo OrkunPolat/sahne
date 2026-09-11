@@ -3,6 +3,7 @@
 import type { Slide } from "@sahne/protocol";
 import { useT } from "@/lib/providers";
 import { ModeBadge } from "./SlideList";
+import { slideTypeKey } from "./slides";
 
 type Patch = Partial<Record<string, unknown>>;
 
@@ -14,7 +15,7 @@ export function SlideForm({ slide, onChange }: { slide: Slide; onChange: (next: 
   return (
     <div className="s-card h-slide-form">
       <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between" }}>
-        <h2>{t(`slideType.${slide.type}`)}</h2>
+        <h2>{t(slideTypeKey(slide.type))}</h2>
         {slide.type === "multiple_choice" ? (
           <div className="h-seg" role="group">
             {(["insight", "game"] as const).map((m) => (
@@ -80,6 +81,13 @@ export function SlideForm({ slide, onChange }: { slide: Slide; onChange: (next: 
         <label className="h-field">
           <span>{t("host.maxEntries")}</span>
           <input className="s-input" type="number" min={1} max={5} value={slide.maxEntries} onChange={(e) => patch({ maxEntries: num(e.target.value, 3) })} />
+        </label>
+      )}
+
+      {slide.type === "qa" && (
+        <label className="h-field">
+          <span>{t("host.maxLength")}</span>
+          <input className="s-input" type="number" min={20} max={300} value={slide.maxLength} onChange={(e) => patch({ maxLength: num(e.target.value, 200) })} />
         </label>
       )}
 

@@ -9,6 +9,8 @@ import { ApiError, getSession, putSlides, PLAY_URL } from "@/lib/api";
 import { findInRegistry, type HostSession } from "@/lib/registry";
 import { JoinQr } from "@/components/JoinQr";
 import { AiPanel } from "@/components/editor/AiPanel";
+import { PdfImport } from "@/components/editor/PdfImport";
+import { SettingsCard } from "@/components/editor/SettingsCard";
 import { SlideList } from "@/components/editor/SlideList";
 import { SlideForm } from "@/components/editor/SlideForm";
 import { newSlide, reindex, validateSlides } from "@/components/editor/slides";
@@ -26,7 +28,7 @@ export default function EditPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"link" | "embed" | null>(null);
 
   useEffect(() => { setReg(findInRegistry(id) ?? null); }, [id]);
 
@@ -70,8 +72,10 @@ export default function EditPage() {
     } finally { setSaving(false); }
   }
 
-  async function copyPlay() {
-    try { await navigator.clipboard.writeText(`${PLAY_URL}?code=${reg?.code ?? ""}`); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  async function copy(kind: "link" | "embed") {
+    const playUrl = `${PLAY_URL}?code=${reg?.code ?? ""}`;
+    const text = kind === "link" ? playUrl : `<iframe src="${playUrl}" width="420" height="720" style="border:0;border-radius:16px"></iframe>`;
+    try { await navigator.clipboard.writeText(text); setCopied(kind); setTimeout(() => setCopied(null), 1500); } catch { /* ignore */ }
   }
 
   if (reg === undefined) return <main className="h-page"><p className="s-muted">{t("common.loading")}</p></main>;
@@ -92,7 +96,7 @@ export default function EditPage() {
     <main className="h-page">
       <div className="h-editor-head s-fade-in">
         <div>
-          <p className="s-muted" style={{ marginBottom: 6 }}>{t("host.editor")}</p>
+          <p className="s-muted" style={{ marginBottom: 6 }}>{t("host.editor")}{(meta?.isDemo || reg.isDemo) && <span className="h-demo-badge">{t("host.demoBadge")}</span>}</p>
           <h1>{meta?.title ?? reg.title}</h1>
         </div>
         <div className="s-card h-join">
@@ -101,7 +105,10 @@ export default function EditPage() {
             <div className="h-code code">{code}</div>
           </div>
           <JoinQr url={`${PLAY_URL}/?code=${meta?.code ?? reg.code}`} size={96} />
-          <button type="button" className="s-btn" onClick={copyPlay}>{copied ? `✓ ${t("host.copied")}` : `⧉ ${t("host.copyLink")}`}</button>
+          <div className="h-actions" style={{ flexDirection: "column" }}>
+            <button type="button" className="s-btn" onClick={() => copy("link")}>{copied === "link" ? `✓ ${t("host.copied")}` : `⧉ ${t("host.copyLink")}`}</button>
+            <button type="button" className="s-btn" onClick={() => copy("embed")} title="<iframe>">{copied === "embed" ? `✓ ${t("host.embedCopied")}` : `‹› ${t("host.embed")}`}</button>
+          </div>
           <Link className="s-btn s-btn--primary s-btn--lg" href={`/s/${reg.id}/present`}>{t("host.present")} →</Link>
         </div>
       </div>
@@ -115,8 +122,12 @@ export default function EditPage() {
           {current ? <SlideForm key={current.id} slide={current} onChange={onChange} /> : <div className="s-card h-empty">{t("host.addSlide")}</div>}
           {errors.length > 0 && <div className="h-errors" role="alert">{errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
           {phase !== "live" && !loadError && (
-            <AiPanel sessionId={reg.id} secret={reg.hostSecret} onSlides={(gen) => { mutate((prev) => [...prev, ...gen]); setSelected(gen[0]?.id ?? null); }} />
+            <>
+              <AiPanel sessionId={reg.id} secret={reg.hostSecret} onSlides={(gen) => { mutate((prev) => [...prev, ...gen]); setSelected(gen[0]?.id ?? null); }} />
+              <PdfImport sessionId={reg.id} secret={reg.hostSecret} onSlides={(gen) => { mutate((prev) => [...prev, ...gen]); setSelected(gen[0]?.id ?? null); }} />
+            </>
           )}
+          {!loadError && <SettingsCard sessionId={reg.id} secret={reg.hostSecret} meta={meta} readOnly={phase === "live"} onSaved={setMeta} />}
           <div className="h-actions" style={{ justifyContent: "flex-end", alignItems: "center" }}>
             {saved && !dirty && <span className="s-chip">✓ {t("host.saved")}</span>}
             <button type="button" className="s-btn s-btn--primary s-btn--lg" onClick={onSave} disabled={saving || !!loadError}>

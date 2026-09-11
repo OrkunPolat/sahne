@@ -1,13 +1,22 @@
 "use client";
 
 import { Avatar } from "@sahne/ui";
-import type { Participant } from "@sahne/protocol";
+import type { Participant, Team } from "@sahne/protocol";
+import { teamHue } from "./TeamStandings";
 import { useT } from "@/lib/providers";
 import { JoinQr } from "@/components/JoinQr";
 import { PLAY_URL } from "@/lib/api";
 
-export function Lobby({ code, playHost, participants, onStart, canStart }: { code: string; playHost: string; participants: Participant[]; onStart: () => void; canStart: boolean }) {
+export function Lobby({ code, playHost, participants, teams = [], onStart, canStart }: { code: string; playHost: string; participants: Participant[]; teams?: Team[]; onStart: () => void; canStart: boolean }) {
   const t = useT();
+  const grouped = teams.length > 0;
+  const unassigned = participants.filter((p) => !p.teamId || !teams.some((tm) => tm.id === p.teamId));
+  const person = (p: Participant) => (
+    <span key={p.id} className={`s-card p-person s-pop${p.connected ? "" : " off"}`}>
+      <Avatar seed={p.avatarSeed} size={36} />
+      {p.nickname}
+    </span>
+  );
   return (
     <div className="p-lobby">
       <div className="s-card s-card--glow p-join">
@@ -28,14 +37,29 @@ export function Lobby({ code, playHost, participants, onStart, canStart }: { cod
         {participants.length === 0 ? (
           <p className="p-waiting">{t("host.waitingForParticipants")}</p>
         ) : (
-          <div className="p-people">
-            {participants.map((p) => (
-              <span key={p.id} className={`s-card p-person s-pop${p.connected ? "" : " off"}`}>
-                <Avatar seed={p.avatarSeed} size={36} />
-                {p.nickname}
-              </span>
-            ))}
+          grouped ? (
+          <div className="p-team-groups">
+            {teams.map((team) => {
+              const members = participants.filter((p) => p.teamId === team.id);
+              return (
+                <div key={team.id} className="p-team-group">
+                  <span className="p-team-chip" style={{ ["--team" as string]: `hsl(${teamHue(team.id)} 60% 55%)` }}>
+                    <i /> {team.name} <b>{members.length}</b>
+                  </span>
+                  <div className="p-people">{members.map(person)}</div>
+                </div>
+              );
+            })}
+            {unassigned.length > 0 && (
+              <div className="p-team-group">
+                <span className="p-team-chip" style={{ ["--team" as string]: "var(--fg-muted)" }}><i /> {t("host.noTeam")}</span>
+                <div className="p-people">{unassigned.map(person)}</div>
+              </div>
+            )}
           </div>
+          ) : (
+          <div className="p-people">{participants.map(person)}</div>
+          )
         )}
       </div>
     </div>

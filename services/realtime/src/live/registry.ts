@@ -49,5 +49,14 @@ export class Registry {
     t.unref?.();
   }
 
+  /** Oturumu bellekten at (demo temizliği). */
+  evictById(id: string) {
+    const s = this.byId.get(id);
+    if (!s) return;
+    this.byId.delete(id);
+    if (this.byCode.get(s.meta.code) === s) this.byCode.delete(s.meta.code);
+    s.dispose();
+  }
+
   disposeAll() { for (const s of this.byCode.values()) s.dispose(); this.byCode.clear(); this.byId.clear(); }
 }

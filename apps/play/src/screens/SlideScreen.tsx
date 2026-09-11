@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import type { AnswerValue, Slide } from "@sahne/protocol";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import type { AnswerValue, Slide, Tally } from "@sahne/protocol";
 import { AnswerButton, TimerRing } from "@sahne/ui";
 import { useI18n } from "../lib/i18n";
+import { sound } from "../lib/sound";
 import { SentState } from "../components/SentState";
+
+export type QuestionsTally = Extract<Tally, { kind: "questions" }>;
+export const MAX_QUESTIONS_PER_PERSON = 5;
 
 interface Props {
   slide: Slide;
@@ -13,6 +17,11 @@ interface Props {
   /** Gönderilen cevabın yerel kopyası (seçili butonu göstermek için). */
   sentValue: AnswerValue | null;
   onAnswer: (value: AnswerValue) => void;
+  /** qa slaydı: canlı soru listesi, kendi takma adın (kendi sorunu oylayamazsın) ve oy toggle'ı. */
+  questions?: QuestionsTally | null;
+  nickname?: string;
+  onAsk?: (text: string) => void;
+  onUpvote?: (questionId: string) => void;
 }
 
 function useTimeUp(startedAt: number, limitS: number, clockOffset: number) {
@@ -26,11 +35,27 @@ function useTimeUp(startedAt: number, limitS: number, clockOffset: number) {
   return up;
 }
 
-export function SlideScreen({ slide, startedAt, clockOffset, locked, sent, sentValue, onAnswer }: Props) {
+/** Son 3 saniyede saniyede bir çok hafif tik (kilitli/bitmişse yok). */
+function useTick(startedAt: number, limitS: number, clockOffset: number, active: boolean) {
+  const last = useRef<number>(-1);
+  useEffect(() => {
+    if (!active) return;
+    const deadline = startedAt + limitS * 1000;
+    const id = setInterval(() => {
+      const remain = Math.ceil((deadline - (Date.now() + clockOffset)) / 1000);
+      if (remain >= 1 && remain <= 3 && remain !== last.current) { last.current = remain; sound.tick(); }
+    }, 100);
+    return () => clearInterval(id);
+  }, [startedAt, limitS, clockOffset, active]);
+}
+
+export function SlideScreen({ slide, startedAt, clockOffset, locked, sent, sentValue, onAnswer, questions, nickname, onAsk, onUpvote }: Props) {
   const { t } = useI18n();
   const timeUp = useTimeUp(startedAt, slide.timeLimitS, clockOffset);
-  const disabled = locked || timeUp || sent;
   const isTitle = slide.type === "title";
+  const isQa = slide.type === "qa";
+  const disabled = locked || timeUp || (sent && !isQa);
+  useTick(startedAt, slide.timeLimitS, clockOffset, !isTitle && !isQa && !locked && !timeUp);
 
   return (
     <div className="p-stack s-fade-in" style={{ flex: 1 }}>
@@ -44,6 +69,8 @@ export function SlideScreen({ slide, startedAt, clockOffset, locked, sent, sentV
 
       {isTitle ? (
         <div className="p-state"><div className="p-sub">{t("play.waitingHost")}</div></div>
+      ) : isQa ? (
+        <Qa slide={slide} disabled={disabled} questions={questions ?? null} nickname={nickname ?? ""} onAsk={onAsk} onUpvote={onUpvote} />
       ) : (
         <Body slide={slide} disabled={disabled} sent={sent} timeUp={timeUp || locked} sentValue={sentValue} onAnswer={onAnswer} />
       )}
@@ -182,6 +209,89 @@ function Scale({ slide, disabled, sent, timeUp, sentValue, onAnswer }: {
         <div className="p-scale__labels"><span>{slide.minLabel ?? slide.min}</span><span>{slide.maxLabel ?? slide.max}</span></div>
       )}
       {sent ? <SentState /> : timeUp ? <SentState timeUp /> : <div className="p-sub" style={{ textAlign: "center" }}>{t("play.tapToAnswer")}</div>}
+    </div>
+  );
+}
+
+/* ---------- live Q&A ---------- */
+function Qa({ slide, disabled, questions, nickname, onAsk, onUpvote }: {
+  slide: Extract<Slide, { type: "qa" }>; disabled: boolean; questions: QuestionsTally | null; nickname: string;
+  onAsk?: (text: string) => void; onUpvote?: (id: string) => void;
+}) {
+  const { t } = useI18n();
+  const max = slide.maxLength;
+  const [text, setText] = useState("");
+  const [asked, setAsked] = useState(0);
+  const [voted, setVoted] = useState<Set<string>>(() => new Set());
+  const [pending, setPending] = useState<Record<string, number>>({});
+  const [justSent, setJustSent] = useState(false);
+
+  // Yeni tally geldiğinde iyimser farklar sunucu değeriyle değiştirilir.
+  useEffect(() => { setPending({}); }, [questions]);
+
+  const left = MAX_QUESTIONS_PER_PERSON - asked;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const v = text.trim().slice(0, max);
+    if (!v || disabled || left <= 0 || !onAsk) return;
+    onAsk(v); setAsked((n) => n + 1); setText("");
+    setJustSent(true); setTimeout(() => setJustSent(false), 1200);
+  };
+  const toggle = (id: string) => {
+    if (disabled || !onUpvote) return;
+    const on = voted.has(id);
+    setVoted((s) => { const n = new Set(s); on ? n.delete(id) : n.add(id); return n; });
+    setPending((p) => ({ ...p, [id]: (p[id] ?? 0) + (on ? -1 : 1) }));
+    try { navigator.vibrate?.(8); } catch { /* ignore */ }
+    onUpvote(id);
+  };
+
+  const list = useMemo(() => {
+    const qs = (questions?.questions ?? []).map((q) => ({ ...q, votes: q.votes + (pending[q.id] ?? 0) }));
+    return qs.sort((a, b) => b.votes - a.votes || a.at - b.at);
+  }, [questions, pending]);
+
+  return (
+    <div className="p-stack" style={{ flex: 1 }}>
+      <form className="p-stack" onSubmit={submit}>
+        <textarea
+          className="s-input p-textarea p-textarea--qa" value={text} onChange={(e) => setText(e.target.value.slice(0, max))} maxLength={max}
+          placeholder={left > 0 ? t("play.askPlaceholder") : t("play.questionLimit")} disabled={disabled || left <= 0}
+        />
+        <div className="p-row" style={{ alignItems: "center" }}>
+          <span className="p-counter" style={{ flex: 1, textAlign: "left" }}>{left > 0 ? t("play.questionsLeft", { n: left }) : t("play.questionLimit")} · {text.length}/{max}</span>
+          <button type="submit" className={`s-btn s-btn--primary ${justSent ? "s-pop" : ""}`} disabled={!text.trim() || disabled || left <= 0}>
+            {justSent ? "✓" : t("play.send")}
+          </button>
+        </div>
+      </form>
+
+      <div className="p-label" style={{ marginTop: 4 }}>{t("play.liveQuestions")} {list.length ? `· ${list.length}` : ""}</div>
+      {list.length === 0 ? (
+        <div className="p-sub" style={{ textAlign: "center", padding: 12 }}>{t("play.noQuestions")}</div>
+      ) : (
+        <ul className="p-qa">
+          {list.map((q) => {
+            const mine = q.nickname === nickname;
+            const on = voted.has(q.id);
+            return (
+              <li key={q.id} className={`p-qa__item ${mine ? "p-qa__item--mine" : ""}`}>
+                <div className="p-qa__body">
+                  <div className="p-qa__text">{q.text}</div>
+                  <div className="p-qa__meta">{q.nickname}{mine && <span className="p-qa__you">{t("play.youChip")}</span>}</div>
+                </div>
+                <button
+                  type="button" className={`p-qa__vote ${on ? "p-qa__vote--on" : ""}`} aria-pressed={on} aria-label={t("play.upvote")}
+                  disabled={mine || disabled} onClick={() => toggle(q.id)}
+                >
+                  <svg viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0112 6a5.5 5.5 0 019.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>
+                  <span>{q.votes}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

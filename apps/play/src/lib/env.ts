@@ -22,3 +22,7 @@ export function wsEndpoint(): string {
   const base = WS_URL.replace(/\/+$/, "");
   return base.endsWith("/ws") ? base : `${base}/ws`;
 }
+
+/** Host (Next) adresi: herkese açık sonuç sayfası `${HOST_URL}/r/<token>`. */
+export const HOST_URL: string =
+  import.meta.env.VITE_HOST_URL || (location.pathname.startsWith("/join") ? location.origin : "https://sahne-host.vercel.app");

@@ -10,6 +10,9 @@ import { ApiError, createSession } from "@/lib/api";
 import { readRegistry, removeFromRegistry, saveToRegistry, type HostSession } from "@/lib/registry";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { PLAY_URL } from "@/lib/api";
+import { DemoButton } from "@/components/home/DemoButton";
+import { AiCard } from "@/components/home/AiCard";
+import { TemplateGallery } from "@/components/home/TemplateGallery";
 
 export default function HomePage() {
   const t = useT();
@@ -53,10 +56,14 @@ export default function HomePage() {
           <h1>{t("host.heroTitle")} <span className="h-accent">{t("host.heroTitleAccent")}</span></h1>
           <p className="s-muted">{t("host.heroLead")}</p>
           <div className="h-actions">
-            <a href="#create" className="s-btn s-btn--primary s-btn--lg">{t("host.ctaCreate")} →</a>
+            <DemoButton className="s-btn s-btn--primary s-btn--lg" />
+            <a href="#create" className="s-btn s-btn--lg">{t("host.ctaCreate")} →</a>
             <a href={PLAY_URL} className="s-btn s-btn--lg">{t("host.ctaJoin")}</a>
           </div>
+          <p className="s-muted h-hero__hint">{t("host.tryNowHint")}</p>
         </section>
+
+        <AiCard />
 
         <div className="h-grid" id="create">
         <section>
@@ -111,6 +118,8 @@ export default function HomePage() {
           )}
         </section>
       </div>
+
+        <TemplateGallery />
 
         <section className="h-section" id="features">
           <h2>{t("host.featuresTitle")}</h2>

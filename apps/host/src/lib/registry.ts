@@ -1,6 +1,6 @@
 "use client";
 
-export type HostSession = { id: string; code: string; title: string; hostSecret: string; createdAt: number };
+export type HostSession = { id: string; code: string; title: string; hostSecret: string; createdAt: number; isDemo?: boolean };
 
 const KEY = "sahne.hostSessions";
 

@@ -5,6 +5,8 @@ export interface StoredPlayer {
   nickname: string;
   token: string | null;
   participantId: string | null;
+  /** Takım modu: seçilen/atanan takım (yeniden katılımda tekrar gönderilir). */
+  teamId?: string | null;
 }
 
 const PLAYER_KEY = "sahne.player";
@@ -24,7 +26,7 @@ export function readPlayer(): StoredPlayer | null {
   try {
     const p = JSON.parse(raw) as Partial<StoredPlayer>;
     if (typeof p.code !== "string" || typeof p.nickname !== "string") return null;
-    return { code: p.code, nickname: p.nickname, token: p.token ?? null, participantId: p.participantId ?? null };
+    return { code: p.code, nickname: p.nickname, token: p.token ?? null, participantId: p.participantId ?? null, teamId: p.teamId ?? null };
   } catch { return null; }
 }
 export function writePlayer(p: StoredPlayer | null) { safeSet(PLAYER_KEY, p ? JSON.stringify(p) : null); }

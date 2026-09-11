@@ -72,3 +72,41 @@ export function getHealth() {
 export function generateSlides(id: string, secret: string, body: { prompt: string; count: number; locale: Locale; mode: "game" | "insight" | "mixed" }) {
   return request<{ slides: Slide[] }>(`/api/sessions/${id}/ai`, { method: "POST", secret, body: JSON.stringify(body) });
 }
+
+/* ---------- Dalga 2 ---------- */
+
+export type AiBody = { prompt: string; count: number; locale: Locale; mode: "game" | "insight" | "mixed" };
+
+/** Anasayfa "Şimdi dene": sunucu 3 örnek slaytla demo oturum açar. */
+export function createDemo(locale?: Locale) {
+  return request<CreatedSession & { isDemo: true }>("/api/demo", { method: "POST", body: JSON.stringify({ locale }) });
+}
+
+/** Oturumsuz AI üretimi (anasayfa kartı). */
+export function aiGenerate(body: AiBody) {
+  return request<{ slides: Slide[] }>("/api/ai/generate", { method: "POST", body: JSON.stringify(body) });
+}
+
+export function importPdf(id: string, secret: string, body: { pdfBase64: string; count?: number; locale?: Locale; mode?: AiBody["mode"] }) {
+  return request<{ slides: Slide[] }>(`/api/sessions/${id}/import-pdf`, { method: "POST", secret, body: JSON.stringify(body) });
+}
+
+export function putSettings(id: string, secret: string, body: { teams?: import("@sahne/protocol").Team[]; seriesKey?: string | null }) {
+  return request<{ meta: SessionMeta }>(`/api/sessions/${id}/settings`, { method: "PUT", secret, body: JSON.stringify(body) });
+}
+
+export type SeriesEntry = { deviceId: string; nickname: string; totalScore: number; sessionsPlayed: number; wins: number };
+export function getSeries(id: string, secret: string) {
+  return request<{ seriesKey: string; sessions: number; leaderboard: SeriesEntry[] }>(`/api/sessions/${id}/series`, { secret });
+}
+
+export type PublicResults = Results & { title: string; endedAt: string | number | null; teams: import("@sahne/protocol").TeamStanding[] };
+export function getPublicResults(token: string) {
+  return request<PublicResults>(`/api/public/${encodeURIComponent(token)}/results`);
+}
+
+/** Host uygulamasının kendi origin'i (public sonuç bağlantısı için). */
+export function hostOrigin(): string {
+  if (typeof window !== "undefined") return window.location.origin;
+  return process.env.NEXT_PUBLIC_HOST_URL ?? "";
+}

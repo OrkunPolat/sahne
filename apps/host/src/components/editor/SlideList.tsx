@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { Slide, SlideType } from "@sahne/protocol";
 import { useT } from "@/lib/providers";
-import { SLIDE_TYPES } from "./slides";
+import { SLIDE_TYPES, slideTypeKey } from "./slides";
 
 const GAME_CAPABLE: Record<SlideType, "insight" | "game" | "both"> = {
-  title: "insight", multiple_choice: "both", true_false: "game", word_cloud: "insight", open_ended: "insight", scale: "insight",
+  title: "insight", multiple_choice: "both", true_false: "game", word_cloud: "insight", open_ended: "insight", scale: "insight", qa: "insight",
 };
 
 export function ModeBadge({ mode }: { mode: Slide["mode"] }) {
@@ -29,7 +29,7 @@ export function SlideList({
         <div key={s.id} className="h-slide-row" aria-current={s.id === selectedId} onClick={() => onSelect(s.id)} role="button" tabIndex={0}
           onKeyDown={(e) => { if (e.key === "Enter") onSelect(s.id); }}>
           <span className="n">{i + 1}</span>
-          <span className="txt">{s.text || t(`slideType.${s.type}`)}</span>
+          <span className="txt">{s.text || t(slideTypeKey(s.type))}</span>
           <ModeBadge mode={s.mode} />
           <span className="ops" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="h-icon" disabled={i === 0} onClick={() => onMove(s.id, -1)} aria-label="↑">↑</button>
@@ -44,7 +44,7 @@ export function SlideList({
             const cap = GAME_CAPABLE[type];
             return (
               <button key={type} type="button" onClick={() => { onAdd(type); setPicking(false); }}>
-                <strong>{t(`slideType.${type}`)}</strong>
+                <strong>{t(slideTypeKey(type))}</strong>
                 <small>{cap === "both" ? `${t("mode.insight")} · ${t("mode.game")}` : t(`mode.${cap}`)}</small>
               </button>
             );

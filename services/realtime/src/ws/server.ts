@@ -59,7 +59,7 @@ export function attachWs(server: Server, registry: Registry) {
       if (msg.t === "player:join") {
         const s = await registry.getOrLoad(msg.code);
         if (!s) return fail("bad_code", undefined, true);
-        const res = s.playerJoin(conn.client, msg.nickname);
+        const res = s.playerJoin(conn.client, msg.nickname, { deviceId: msg.deviceId ?? null, teamId: msg.teamId ?? null });
         if (!res.ok) return fail(res.code, undefined, true);
         conn.role = "player"; conn.session = s;
         return;
@@ -88,14 +88,14 @@ export function attachWs(server: Server, registry: Registry) {
     }
 
     // player
-    if (msg.t === "player:answer") {
-      const pid = s.participantIdOf(conn.client);
-      if (!pid) return fail("invalid");
-      const code = s.playerAnswer(pid, msg.slideId, msg.value);
-      if (code) fail(code);
-      return;
+    const pid = s.participantIdOf(conn.client);
+    if (!pid) return fail("invalid");
+    switch (msg.t) {
+      case "player:answer": { const code = s.playerAnswer(pid, msg.slideId, msg.value); if (code) fail(code); return; }
+      case "player:upvote": { const code = s.playerUpvote(pid, msg.slideId, msg.questionId); if (code) fail(code); return; }
+      case "player:react": { const code = s.playerReact(pid, msg.emoji); if (code) fail(code); return; }
+      default: return fail("invalid", "Not allowed for player");
     }
-    return fail("invalid", "Not allowed for player");
   }
 
   return wss;

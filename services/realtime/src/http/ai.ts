@@ -64,7 +64,23 @@ function toSlide(r: Raw, idx: number): Slide | null {
   }
 }
 
+export type AiOpts = Omit<z.infer<typeof AiBody>, "prompt">;
+
+/** PDF'ten çıkarılan metin bu kadar karakterle kırpılır (prompt bütçesi). */
+export const MAX_SOURCE_TEXT_CHARS = 12_000;
+
 export async function generateSlides(body: z.infer<typeof AiBody>): Promise<Slide[]> {
+  return generate(`Topic/brief: ${body.prompt}`, body);
+}
+
+/** PDF/metin kaynağından soru üretimi: metin brief olarak gider; model yalnızca metindeki bilgiye dayanır. */
+export async function generateSlidesFromText(text: string, opts: AiOpts): Promise<Slide[]> {
+  const src = text.replace(/\s+\n/g, "\n").trim().slice(0, MAX_SOURCE_TEXT_CHARS);
+  if (src.length < 20) throw new HttpError(422, "empty_text", "No extractable text in document");
+  return generate(`Generate questions strictly from the following source text. Do not use outside knowledge for mode=game answers.\n<source>\n${src}\n</source>`, opts);
+}
+
+async function generate(brief: string, body: AiOpts): Promise<Slide[]> {
   if (!aiEnabled()) throw new HttpError(503, "ai_disabled", "ANTHROPIC_API_KEY is not configured");
   const client = new Anthropic();
   const lang = body.locale === "tr" ? "Turkish" : "English";
@@ -75,7 +91,7 @@ export async function generateSlides(body: z.infer<typeof AiBody>): Promise<Slid
     model: MODEL,
     max_tokens: 4000,
     system: `You write live-audience session slides. Language: ${lang}. Questions must be short (≤120 chars), unambiguous, and factual when mode=game. Options ≤ 60 chars. Never include the answer in the question. Use the emit_slides tool exactly once.`,
-    messages: [{ role: "user", content: `Topic/brief: ${body.prompt}\nSlide count: ${body.count}\n${mix}` }],
+    messages: [{ role: "user", content: `${brief}\nSlide count: ${body.count}\n${mix}` }],
     tools: [tool],
     tool_choice: { type: "tool", name: "emit_slides" },
   });

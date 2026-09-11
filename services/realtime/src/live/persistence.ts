@@ -11,10 +11,13 @@ export interface RevealRow {
 }
 
 export interface Persistence {
-  addParticipant(sessionId: string, p: Participant): Promise<void>;
-  saveAnswer(sessionId: string, slideId: string, participantId: string, value: AnswerValue, answeredAt: number, msTaken: number): Promise<void>;
+  addParticipant(sessionId: string, p: Participant, deviceId: string | null): Promise<void>;
+  /** answerId: bellekte üretilen kimlik (qa slaydında soru kimliği olarak istemciye de gider). */
+  saveAnswer(sessionId: string, slideId: string, participantId: string, answerId: string, value: AnswerValue, answeredAt: number, msTaken: number): Promise<void>;
   saveReveal(sessionId: string, slideId: string, rows: RevealRow[]): Promise<void>;
   setState(sessionId: string, state: SessionPhase, currentSlideIdx: number): Promise<void>;
+  /** Oturum bitti: public_token + ended_at. */
+  setEnded(sessionId: string, publicToken: string, endedAt: number): Promise<void>;
 }
 
 export const noopPersistence: Persistence = {
@@ -22,4 +25,5 @@ export const noopPersistence: Persistence = {
   saveAnswer: async () => {},
   saveReveal: async () => {},
   setState: async () => {},
+  setEnded: async () => {},
 };

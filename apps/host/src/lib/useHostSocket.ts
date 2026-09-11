@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { ServerMessage, type ClientMessage, type LeaderboardEntry, type SessionSnapshot, type Tally } from "@sahne/protocol";
+import { ServerMessage, type ClientMessage, type FastestEntry, type LeaderboardEntry, type Reaction, type SessionSnapshot, type Tally, type TeamStanding } from "@sahne/protocol";
 import { WS_URL } from "./api";
 
 export type SocketStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -13,17 +13,25 @@ export type HostState = {
   clockOffset: number;
   tally: Tally | null;
   answeredCount: number;
-  reveal: { slideId: string; correct: string[] | boolean | null; leaderboard: LeaderboardEntry[]; tally: Tally } | null;
+  reveal: { slideId: string; correct: string[] | boolean | null; leaderboard: LeaderboardEntry[]; tally: Tally; fastest: FastestEntry[]; teams: TeamStanding[] } | null;
   podium: LeaderboardEntry[] | null;
   leaderboard: LeaderboardEntry[];
+  /** Son reveal'deki takım sıralaması (oturum sonunda session:ended ile güncellenir). */
+  teams: TeamStanding[];
+  publicToken: string | null;
+  /** Büyük ekranda uçan tepkiler; en son 40 tanesi tutulur, bileşen süresi dolanları eler. */
+  reactions: FloatingReaction[];
   error: ErrorCode | null;
 };
+export type FloatingReaction = { id: number; emoji: Reaction; at: number; x: number };
+const MAX_REACTIONS = 40;
+let reactionSeq = 0;
 
 type Action = { kind: "status"; status: SocketStatus } | { kind: "msg"; msg: ServerMessage };
 
 const initial: HostState = {
   status: "connecting", snapshot: null, clockOffset: 0, tally: null, answeredCount: 0,
-  reveal: null, podium: null, leaderboard: [], error: null,
+  reveal: null, podium: null, leaderboard: [], teams: [], publicToken: null, reactions: [], error: null,
 };
 
 function reduce(s: HostState, a: Action): HostState {
@@ -38,6 +46,7 @@ function reduce(s: HostState, a: Action): HostState {
         tally: s.snapshot && s.snapshot.currentSlideIdx === snap.currentSlideIdx ? s.tally : null,
         reveal: s.reveal && snap.slidePhase === "revealed" && snap.slides[snap.currentSlideIdx]?.id === s.reveal.slideId ? s.reveal : null,
         podium: snap.phase === "ended" ? s.podium : null,
+        publicToken: snap.meta.publicToken ?? s.publicToken,
       };
     }
     case "participants:update":
@@ -60,12 +69,22 @@ function reduce(s: HostState, a: Action): HostState {
       const participants = s.snapshot?.participants.map((p) => ({ ...p, score: scores.get(p.id) ?? p.score })) ?? [];
       return {
         ...s, tally: m.tally, leaderboard: m.leaderboard,
-        reveal: { slideId: m.slideId, correct: m.correct, leaderboard: m.leaderboard, tally: m.tally },
+        reveal: { slideId: m.slideId, correct: m.correct, leaderboard: m.leaderboard, tally: m.tally, fastest: m.fastest, teams: m.teams },
+        teams: m.teams.length > 0 ? m.teams : s.teams,
         snapshot: s.snapshot ? { ...s.snapshot, slidePhase: "revealed", participants } : s.snapshot,
       };
     }
     case "session:ended":
-      return { ...s, podium: m.podium, snapshot: s.snapshot ? { ...s.snapshot, phase: "ended" } : s.snapshot };
+      return {
+        ...s, podium: m.podium, teams: m.teams.length > 0 ? m.teams : s.teams, publicToken: m.publicToken ?? s.publicToken,
+        snapshot: s.snapshot ? { ...s.snapshot, phase: "ended", meta: { ...s.snapshot.meta, publicToken: m.publicToken ?? s.snapshot.meta.publicToken } } : s.snapshot,
+      };
+    case "reaction": {
+      const now = Date.now();
+      const fresh = s.reactions.filter((r) => now - r.at < 2600);
+      const next = [...fresh, { id: ++reactionSeq, emoji: m.emoji, at: now, x: Math.random() }];
+      return { ...s, reactions: next.length > MAX_REACTIONS ? next.slice(next.length - MAX_REACTIONS) : next };
+    }
     case "error":
       return { ...s, error: m.code };
     default:
