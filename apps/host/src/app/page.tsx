@@ -44,7 +44,7 @@ export default function HomePage() {
     <main className="h-page">
       <header className="h-hero s-fade-in">
         <h1>{t("common.appName")}</h1>
-        <p className="s-muted">{t("host.secretHint")}</p>
+        <p className="s-muted">{t("host.tagline")}</p>
       </header>
 
       <div className="h-grid">

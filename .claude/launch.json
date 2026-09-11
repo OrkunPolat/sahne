@@ -13,13 +13,15 @@
     },
     {
       "name": "host",
-      "runtimeExecutable": "pnpm",
+      "runtimeExecutable": "env",
       "runtimeArgs": [
+        "PORT=3010",
+        "pnpm",
         "--filter",
         "@sahne/host",
         "dev"
       ],
-      "port": 3000
+      "port": 3010
     }
   ]
 }

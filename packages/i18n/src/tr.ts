@@ -38,6 +38,7 @@ export const tr = {
     scale: "Ölçek",
   },
   host: {
+    tagline: "Sor, oynat, dinle. Tek sahnede.",
     newSession: "Yeni oturum",
     sessionTitle: "Oturum başlığı",
     sessionTitlePlaceholder: "Örn. Cuma ekip toplantısı",

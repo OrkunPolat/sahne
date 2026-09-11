@@ -40,6 +40,7 @@ export const en: Dictionary = {
     scale: "Scale",
   },
   host: {
+    tagline: "Ask, play, listen. One stage.",
     newSession: "New session",
     sessionTitle: "Session title",
     sessionTitlePlaceholder: "e.g. Friday team meeting",
