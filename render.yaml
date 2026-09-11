@@ -9,8 +9,6 @@ services:
     dockerContext: .
     healthCheckPath: /health
     envVars:
-      - key: REALTIME_PORT
-        value: "4100"
       - key: DATABASE_URL
         sync: false
       - key: ANTHROPIC_API_KEY

@@ -35,9 +35,9 @@ packages/ui       token'lar, 4 tema, primitives
 |---|---|---|
 | host | https://sahne-host.vercel.app | Vercel proje `sahne-host`, root `apps/host` |
 | play | https://sahne-play.vercel.app | Vercel proje `sahne-play`, `apps/play/dist` statik |
-| realtime | henüz yok | WebSocket + Postgres gerektirir, Vercel'de çalışmaz. `services/realtime/Dockerfile` + `fly.toml` hazır. |
+| realtime | https://sahne-realtime.onrender.com | Render ücretsiz plan (Docker, Frankfurt, `render.yaml`); 15 dk boşta kalınca uyur, ilk istek ~1 dk. DB: Supabase projesi `sahne` (ücretsiz). |
 
-Realtime'ı barındırdıktan sonra deploy edilmiş istemcilere adresi ver:
+Vercel env'leri realtime adresine bağlı. Farklı bir realtime denemek için:
 `https://sahne-host.vercel.app/?api=https://REALTIME_ADRESI` ve `https://sahne-play.vercel.app/?api=https://REALTIME_ADRESI`
 (adres localStorage'da kalır; WebSocket adresi otomatik türetilir). Kalıcı çözüm: Vercel env `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_WS_URL` (host) ve `VITE_API_URL` ile yeniden build.
 
