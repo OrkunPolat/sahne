@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Slide } from "./slides";
+import { BracketState } from "./tournament";
 
 export const ThemeId = z.enum(["midnight-gold", "obsidian-neon", "cream-forest", "burgundy-champagne"]);
 export type ThemeId = z.infer<typeof ThemeId>;
@@ -87,5 +88,7 @@ export const SessionSnapshot = z.object({
   serverNow: z.number(),
   participants: z.array(Participant),
   answeredCount: z.number().int().default(0),
+  /** Güncel slayt bracket ise durumu */
+  bracket: BracketState.nullable().default(null),
 });
 export type SessionSnapshot = z.infer<typeof SessionSnapshot>;

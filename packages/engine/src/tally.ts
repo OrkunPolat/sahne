@@ -47,6 +47,11 @@ export function buildTally(slide: Slide, answers: AnswerRecord[], upvotes?: Upvo
         .sort((x, y) => y.votes - x.votes || x.at - y.at);
       return { kind: "questions", questions, total: answers.length };
     }
+    case "bracket": {
+      const counts: Record<string, number> = {};
+      for (const a of answers) if (a.value.kind === "choice") for (const id of a.value.optionIds) counts[id] = (counts[id] ?? 0) + 1;
+      return { kind: "choice", counts, total: answers.length };
+    }
     case "title":
       return { kind: "text", entries: [], total: 0 };
   }

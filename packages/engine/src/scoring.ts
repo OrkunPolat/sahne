@@ -68,6 +68,7 @@ export function validateAnswerForSlide(slide: Slide, value: AnswerValue): boolea
     case "open_ended": return value.kind === "text" && value.text.length <= slide.maxLength;
     case "scale": return value.kind === "scale" && value.value >= slide.min && value.value <= slide.max;
     case "qa": return value.kind === "question" && value.text.length <= slide.maxLength;
+    case "bracket": return value.kind === "choice" && value.optionIds.length === 1; // eşleşme kontrolü sunucuda (mevcut a/b)
     case "title": return false;
   }
 }

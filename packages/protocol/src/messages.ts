@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AnswerValue, Slide, Tally } from "./slides";
+import { BracketState } from "./tournament";
 import { FastestEntry, LeaderboardEntry, Participant, SessionSnapshot, SlidePhase, TeamStanding } from "./session";
 
 /* ---------- Client → Server ---------- */
@@ -82,6 +83,8 @@ export const SessionEnded = z.object({
   /** Herkese açık sonuç sayfası: HOST_URL/r/<publicToken>. */
   publicToken: z.string().nullable().default(null),
 });
+/** Bracket slaydında her eşleşme değişiminde herkese. */
+export const BracketStateMsg = z.object({ t: z.literal("bracket:state"), state: BracketState });
 /** Herkese yayınlanır (host ekranında uçar). */
 export const ReactionBroadcast = z.object({ t: z.literal("reaction"), emoji: Reaction, participantId: z.string() });
 export const ErrorMessage = z.object({
@@ -91,7 +94,7 @@ export const ErrorMessage = z.object({
 });
 
 export const ServerMessage = z.discriminatedUnion("t", [
-  StateSnapshot, PlayerJoined, ParticipantsUpdate, SlideOpen, SlidePhaseChange, SlideTally, AnswerAck, SlideReveal, SessionEnded, ErrorMessage, ReactionBroadcast,
+  StateSnapshot, PlayerJoined, ParticipantsUpdate, SlideOpen, SlidePhaseChange, SlideTally, AnswerAck, SlideReveal, SessionEnded, ErrorMessage, ReactionBroadcast, BracketStateMsg,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 

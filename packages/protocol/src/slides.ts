@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TournamentItem } from "./tournament";
 
 export const SlideMode = z.enum(["insight", "game"]);
 export type SlideMode = z.infer<typeof SlideMode>;
@@ -72,6 +73,18 @@ export const QaSlide = z.object({
   maxLength: z.number().int().min(20).max(300).default(200),
 });
 
+/** Canlı turnuva: salon her eşleşmeyi oylar. Puansız (insight). items sunucu tarafında turnuvadan doldurulur. */
+export const BracketSlide = z.object({
+  ...base,
+  type: z.literal("bracket"),
+  mode: z.literal("insight"),
+  tournamentId: z.string(),
+  /** 4..256, 2'nin kuvveti, aday sayısını aşamaz */
+  size: z.number().int().min(4).max(256),
+  /** Sunucu doldurur; host editörde önizleme için kullanılabilir */
+  items: z.array(TournamentItem).default([]),
+});
+
 export const Slide = z.discriminatedUnion("type", [
   TitleSlide,
   MultipleChoiceSlide,
@@ -80,6 +93,7 @@ export const Slide = z.discriminatedUnion("type", [
   OpenEndedSlide,
   ScaleSlide,
   QaSlide,
+  BracketSlide,
 ]);
 export type Slide = z.infer<typeof Slide>;
 export type SlideType = Slide["type"];

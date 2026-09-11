@@ -62,3 +62,38 @@ MAX_PARTICIPANTS = 50 → `error session_full`. Takma ad benzersiz (case-insensi
 - `sessions`: `teams jsonb default '[]'`, `series_key text null`, `public_token text null unique`, `is_demo bool default false`, `ended_at timestamptz null`.
 - `participants`: `device_id text null`, `team_id text null`.
 - `answers.id` qa için soru kimliği olarak kullanılır. Upvote'lar bellekte (deneme).
+
+# Dalga 3 — Turnuva (uwufufu mantığı)
+
+Kavram: `Tournament` (protocol/tournament.ts). N aday (isim + görsel), tek elemeli ikili seçim, şampiyon. İki kullanım:
+- **Solo**: herkese açık galeri, tek başına oyna, sonuç istatistiklere eklenir (kazanma oranı, şampiyonluk oranı).
+- **Canlı**: `bracket` slaydı; salon her eşleşmeyi telefondan oylar, host ilerletir.
+
+## DB
+- `tournaments`: id, slug (unique, başlıktan üretilir + kısa ek), title, description, category, locale, cover_url, items jsonb, visibility, owner_secret (nanoid 24), plays int, created_at, updated_at.
+- `tournament_item_stats`: (tournament_id, item_id) PK, wins, losses, finals, champions.
+- `tournament_plays`: id, tournament_id, size, champion_id, device_id null, source ('solo'|'live'), created_at. (results saklanmaz; stats'a işlenir.)
+
+## REST
+- `GET /api/tournaments?sort=latest|popular&category=&locale=&q=&limit=24&cursor=` → `{ items: TournamentCard[], nextCursor }` (yalnızca `public`).
+- `POST /api/tournaments` body `{ title, description?, category?, locale?, coverUrl?, items: TournamentItem[] (id'siz gelebilir, sunucu nanoid(8) atar), visibility? }` → `201 { tournament, ownerSecret }`. Rate limit: IP başına 10/saat.
+- `GET /api/tournaments/:slug` → `{ tournament, stats: TournamentItemStat[] }` (unlisted da slug ile açılır).
+- `PUT /api/tournaments/:id` header `x-owner-secret` → güncelle (items değişirse stats'ı o item'lar için sıfırlama yok; silinen item'ların stats'ı kalır, gösterilmez).
+- `DELETE /api/tournaments/:id` header `x-owner-secret`.
+- `POST /api/tournaments/:id/plays` body `BracketPlay + { deviceId? }` → `{ ok, stats }`. Sunucu `validatePlay` ile doğrular (item id'ler turnuvada olmalı), `playToStatDeltas` uygular, `plays++`. Rate limit: aynı device+tournament 1/dk.
+- `POST /api/uploads` multipart `file` (image/jpeg|png|webp|gif, ≤ 3 MB) → `{ url }`. Supabase Storage bucket `media` (public) — env `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`. Sunucu sharp ile 1200px'e küçültüp webp'ye çevirir (dep: `sharp`). Rate limit IP başına 60/saat.
+- Oturum slaytı `bracket` için `PUT /api/sessions/:id/slides` sırasında sunucu `tournamentId`'yi doğrular, `size ≤ maxBracketSize(items)` kontrol eder, `items`'ı turnuvadan doldurur (host'un gönderdiği items yok sayılır).
+
+## WS (bracket slaydı)
+- Slayt açılınca sunucu `beginRun(slideId, items, size)` yapar; snapshot `bracket: BracketState` taşır; herkese `bracket:state`.
+- Katılımcı `player:answer {kind:"choice", optionIds:[itemId]}`; itemId mevcut `current.a/b`'den biri olmalı, aksi `error invalid`. Eşleşme başına bir oy (matchIdx değişince tekrar oy verilebilir). Her oyda host'a `slide:tally {kind:"choice"}` (canlı çubuklar).
+- Süre: `timeLimitS` her eşleşme için; dolunca otomatik lock.
+- `host:reveal` → eşleşme sonuçlanır (`resolveMatch`), `slidePhase: revealed`, herkese `bracket:state` (results güncel, `current` bir sonraki eşleşmeye geçmiş ama phase revealed olduğu için oy kapalı).
+- `host:next` → bracket şampiyonsuz ise: bir sonraki eşleşmeyi **açar** (phase open, answers sıfır, timer yeniden) ve `slide:open` YERİNE `bracket:state` + `slide:phase open` gönderir; şampiyon belirlenmişse normal slayt geçişi.
+- Şampiyon belirlenince sunucu `tournament_plays`'e `source: live` bir kayıt işler ve stats'ı günceller (oy sayıları değil; kazanan/kaybeden bazında).
+- Reveal mesajı bracket slaydında `slide:reveal` olarak gönderilir; `correct: null`, `tally` o eşleşmenin oyları.
+
+## Host sayfaları
+- `/t` galeri (Son / Popüler, kategori, dil, arama), `/t/new` oluştur, `/t/[slug]` detay (istatistik tablosu + Oyna), `/t/[slug]/play` solo oyun, `/t/[slug]/edit?secret=` düzenle.
+- Header nav'a "Turnuvalar".
+- Editör slayt tipleri: "Canlı turnuva" → turnuva seç (galeriden ara veya slug yapıştır) + boyut.
