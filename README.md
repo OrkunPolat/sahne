@@ -48,3 +48,6 @@ vercel deploy --prod --yes   # repo kökünden, sahne-host
 ```
 
 AI slayt üretimi için realtime ortamına `ANTHROPIC_API_KEY` (isteğe bağlı `ANTHROPIC_MODEL`, varsayılan claude-sonnet-5).
+
+## Dalga 2 özellikleri (2026-09-11)
+Şimdi dene (kayıtsız demo), anasayfadan AI ile oturum, PDF'ten slayt, emoji tepkileri, ses efektleri, en hızlı 3, takım modu, canlı Soru-Cevap slaydı, şablon galerisi, seri (kümülatif) tablo, herkese açık sonuç sayfası `/r/<token>`, gömme kodu, katılımcı için paylaşılabilir sonuç kartı. Ayrıntı: docs/API.md "Dalga 2".
