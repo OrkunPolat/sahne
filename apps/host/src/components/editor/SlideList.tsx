@@ -6,7 +6,7 @@ import { useT } from "@/lib/providers";
 import { SLIDE_TYPES, slideTypeKey } from "./slides";
 
 const GAME_CAPABLE: Record<SlideType, "insight" | "game" | "both"> = {
-  title: "insight", multiple_choice: "both", true_false: "game", word_cloud: "insight", open_ended: "insight", scale: "insight", qa: "insight",
+  title: "insight", multiple_choice: "both", true_false: "game", word_cloud: "insight", open_ended: "insight", scale: "insight", qa: "insight", bracket: "insight",
 };
 
 export function ModeBadge({ mode }: { mode: Slide["mode"] }) {

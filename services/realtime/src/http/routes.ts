@@ -1,4 +1,4 @@
-// docs/API.md REST rotaları (Faz 1 + Dalga 2). Plain node:http, ufak bir eşleyici.
+// docs/API.md REST rotaları (Faz 1 + Dalga 2 + Dalga 3 turnuva → ./tournaments.ts). Plain node:http, ufak bir eşleyici.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -12,6 +12,9 @@ import { CORS_HEADERS, HttpError, json, readBody, sendError } from "./util";
 import { AiBody, aiEnabled, generateSlides, generateSlidesFromText } from "./ai";
 import { demoSlides, demoTitle } from "./demo";
 import { extractPdfText } from "./pdf";
+import { route, type Route } from "./router";
+import { tournamentRoutes } from "./tournaments";
+import { fillBracketSlides } from "./bracketSlides";
 
 const CreateBody = z.object({ title: z.string().min(1).max(80), themeDefault: ThemeId.default("midnight-gold"), localeDefault: Locale.default("tr") });
 const SlidesBody = z.object({ slides: z.array(Slide) });
@@ -29,14 +32,6 @@ const ImportPdfBody = z.object({
   mode: AiBody.shape.mode,
 });
 
-type Handler = (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) => Promise<void>;
-interface Route { method: string; pattern: RegExp; keys: string[]; handler: Handler }
-
-function route(method: string, path: string, handler: Handler): Route {
-  const keys: string[] = [];
-  const pattern = new RegExp("^" + path.replace(/:(\w+)/g, (_, k) => { keys.push(k); return "([^/]+)"; }) + "/?$");
-  return { method, pattern, keys, handler };
-}
 
 async function authed(req: IncomingMessage, id: string) {
   const row = await getSession(id);
@@ -103,7 +98,7 @@ export function buildRouter(registry: Registry) {
       const live = registry.peekById(row.id);
       if ((live?.phase ?? row.state) === "live") throw new HttpError(409, "session_live", "Slides cannot change while session is live");
       const { slides } = await readBody(req, SlidesBody);
-      const sorted = [...slides].sort((a, b) => a.idx - b.idx);
+      const sorted = await fillBracketSlides([...slides].sort((a, b) => a.idx - b.idx));
       await replaceSlides(row.id, sorted);
       live?.setSlides(sorted);
       json(res, 200, { slides: sorted });
@@ -159,6 +154,8 @@ export function buildRouter(registry: Registry) {
       if (!row) throw new HttpError(404, "not_found", "Session not found");
       json(res, 200, { title: row.title, themeDefault: row.themeDefault, localeDefault: row.localeDefault, phase: row.state, teams: row.teams ?? [] });
     }),
+
+    ...tournamentRoutes(),
   ];
 
   return async function handle(req: IncomingMessage, res: ServerResponse) {

@@ -8,7 +8,7 @@ export class HttpError extends Error {
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, x-host-secret",
+  "Access-Control-Allow-Headers": "Content-Type, x-host-secret, x-owner-secret",
   "Access-Control-Max-Age": "86400",
 };
 

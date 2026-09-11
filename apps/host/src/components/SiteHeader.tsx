@@ -25,8 +25,9 @@ export function SiteHeader() {
       <div className="h-site-header__inner">
         <Link href="/" className="h-brand"><Logo /> <span>{t("common.appName")}</span></Link>
         <nav className="h-nav" aria-label="Site">
-          <a href="#features">{t("host.nav_features")}</a>
-          <a href="#how">{t("host.nav_how")}</a>
+          <Link href="/t">{t("tournament.nav")}</Link>
+          <a href="/#features">{t("host.nav_features")}</a>
+          <a href="/#how">{t("host.nav_how")}</a>
           <a href={PLAY_URL}>{t("host.nav_join")}</a>
         </nav>
         <div className="h-site-header__ctl">
@@ -36,7 +37,7 @@ export function SiteHeader() {
               <button key={l} type="button" aria-pressed={locale === l} onClick={() => setLocale(l)}>{l.toUpperCase()}</button>
             ))}
           </div>
-          <a href="#create" className="s-btn s-btn--primary h-nav-cta">{t("host.ctaCreate")}</a>
+          <a href="/#create" className="s-btn s-btn--primary h-nav-cta">{t("host.ctaCreate")}</a>
         </div>
       </div>
     </header>
@@ -51,6 +52,7 @@ export function SiteFooter() {
         <div className="h-brand h-brand--muted"><Logo size={18} /> <span>{t("common.appName")}</span></div>
         <p className="s-muted">{t("host.footerNote")}</p>
         <nav className="h-footer-links" aria-label="Footer">
+          <Link href="/t">{t("tournament.nav")}</Link>
           <a href={PLAY_URL}>{t("host.nav_join")}</a>
           <a href="https://github.com/OrkunPolat/sahne" target="_blank" rel="noreferrer">{t("host.footerSource")}</a>
         </nav>

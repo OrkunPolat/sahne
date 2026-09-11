@@ -3,7 +3,7 @@ import { Slide, type SlideType } from "@sahne/protocol";
 import type { TKey } from "@sahne/i18n";
 import { z } from "zod";
 
-export const SLIDE_TYPES: SlideType[] = ["title", "multiple_choice", "true_false", "word_cloud", "open_ended", "scale", "qa"];
+export const SLIDE_TYPES: SlideType[] = ["title", "multiple_choice", "true_false", "word_cloud", "open_ended", "scale", "qa", "bracket"];
 
 /** Slayt tipi etiketi anahtarı. */
 export function slideTypeKey(type: SlideType): TKey {
@@ -23,6 +23,7 @@ export function newSlide(type: SlideType, idx: number, optionLabel: (n: number) 
     case "open_ended": return { ...base, type, mode: "insight", points: 0, timeLimitS: 90, maxLength: 200 };
     case "scale": return { ...base, type, mode: "insight", points: 0, min: 1, max: 5, minLabel: "", maxLabel: "" };
     case "qa": return { ...base, type, mode: "insight", points: 0, timeLimitS: 120, maxLength: 200 };
+    case "bracket": return { ...base, type, mode: "insight", points: 0, timeLimitS: 15, tournamentId: "", size: 8, items: [] };
   }
 }
 

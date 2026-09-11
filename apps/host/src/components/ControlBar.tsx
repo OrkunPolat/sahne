@@ -10,7 +10,7 @@ export function ControlBar() {
   const t = useT();
   const [theme, setTheme] = useTheme();
   const [locale, setLocale] = useLocale();
-  if (pathname === "/") return null;
+  if (pathname === "/" || pathname === "/t" || pathname.startsWith("/t/")) return null;
   const labels = Object.fromEntries(THEME_IDS.map((id) => [id, t(`theme.${id}`)])) as Record<ThemeId, string>;
   return (
     <div className="h-topbar s-card" aria-label={t("common.theme")}>

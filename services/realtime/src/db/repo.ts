@@ -6,6 +6,7 @@ import { buildLeaderboard, buildTally, buildTeamStandings, type AnswerRecord } f
 import { db } from "./client";
 import { answers, participants, sessions, slides } from "./schema";
 import type { Persistence, RevealRow } from "../live/persistence";
+import { recordPlay } from "./tournaments";
 
 export type SessionRow = typeof sessions.$inferSelect;
 
@@ -153,5 +154,8 @@ export const pgPersistence: Persistence = {
   },
   async setEnded(sessionId, publicToken, endedAt) {
     await db.update(sessions).set({ publicToken, endedAt: new Date(endedAt) }).where(eq(sessions.id, sessionId));
+  },
+  async recordTournamentPlay(tournamentId, play) {
+    await recordPlay(tournamentId, play, null, "live");
   },
 };

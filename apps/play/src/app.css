@@ -210,3 +210,82 @@ body { min-height: 100dvh; overscroll-behavior-y: none; -webkit-tap-highlight-co
 .p-share__thumb { width: 54px; height: 96px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex: none; }
 .p-share__body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 a.s-btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---- dalga 3: canlı turnuva ---- */
+.p-bracket { position: relative; }
+.p-bracket__pair {
+  flex: 1; display: grid; grid-template-rows: 1fr auto 1fr; gap: 6px; min-height: 0;
+}
+.p-bracket__pair--in { animation: p-bracket-in var(--dur) var(--ease-out) both; }
+@keyframes p-bracket-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+.p-bracket__vs {
+  justify-self: center; font-family: var(--font-display); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--fg-muted); padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-elevated);
+}
+@media (orientation: landscape) and (min-width: 560px) {
+  .p-bracket__pair { grid-template-rows: 1fr; grid-template-columns: 1fr auto 1fr; align-items: stretch; }
+  .p-bracket__vs { align-self: center; }
+  .p-bracket__card { min-height: 46dvh; }
+}
+
+.p-bracket__card {
+  position: relative; display: block; width: 100%; min-height: 30dvh; padding: 0; overflow: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-elevated); color: var(--fg);
+  cursor: pointer; text-align: left; isolation: isolate;
+  box-shadow: 0 16px 40px -24px rgba(0,0,0,0.7);
+  transition: transform 220ms var(--ease-out), opacity var(--dur), filter var(--dur), box-shadow var(--dur), border-color var(--dur);
+}
+.p-bracket__card:active:not(:disabled) { transform: scale(0.98); }
+.p-bracket__card:disabled { cursor: default; }
+.p-bracket__card--selected { border-color: transparent; outline: 3px solid var(--accent); outline-offset: 3px; box-shadow: var(--glow); }
+.p-bracket__card--dim, .p-bracket__card--loser { opacity: 0.42; filter: saturate(0.5); transform: scale(0.97); }
+.p-bracket__card--winner { border-color: transparent; outline: 3px solid var(--success); outline-offset: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 30%, transparent), 0 20px 60px -20px color-mix(in srgb, var(--success) 60%, transparent); }
+.p-bracket__card--big { min-height: 48dvh; }
+
+.p-bracket__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: 0; }
+.p-bracket__img--fallback { display: flex; align-items: center; justify-content: center; }
+.p-bracket__img--fallback span { font-family: var(--font-display); font-weight: 800; font-size: clamp(4rem, 26vw, 7rem); color: rgba(255,255,255,0.86); letter-spacing: -0.04em; text-shadow: 0 10px 40px rgba(0,0,0,0.35); }
+.p-bracket__shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.72) 100%); pointer-events: none; }
+.p-bracket__name {
+  position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 2;
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(1.25rem, 6vw, 1.7rem); line-height: 1.1; letter-spacing: -0.02em;
+  color: #FFF8EE; text-shadow: 0 2px 14px rgba(0,0,0,0.6); overflow-wrap: anywhere;
+}
+.p-bracket__badge {
+  position: absolute; top: 12px; right: 12px; z-index: 2; padding: 6px 12px; border-radius: 999px;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: #fff; font-weight: 700; font-size: 0.85rem; font-variant-numeric: tabular-nums; border: 1px solid rgba(255,255,255,0.18);
+}
+.p-bracket__badge--you { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-fg); border-color: transparent; font-size: 1rem; animation: s-pop 320ms var(--ease-out) both; }
+.p-bracket__badge--win { background: var(--success); border-color: transparent; }
+.p-bracket__crown { position: absolute; top: 10px; left: 14px; z-index: 2; color: var(--success); font-size: 1.4rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5); animation: s-pop 420ms var(--ease-out) both; }
+
+.p-bracket__foot { min-height: 64px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.p-bracket__verdict { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.4rem, 7vw, 1.9rem); text-align: center; letter-spacing: -0.02em; }
+.p-bracket__score {
+  flex: none; display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.6rem, 8vw, 2.2rem); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--fg-muted); line-height: 1;
+}
+.p-bracket__score--win { color: var(--success); }
+.p-bracket__score-dash { font-size: 0.6em; }
+
+/* şampiyon */
+.p-bracket__champ { position: relative; overflow: hidden; gap: 12px; }
+.p-bracket__champ-card { position: relative; z-index: 1; }
+.p-bracket__champ-name { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 10vw, 2.8rem); text-align: center; letter-spacing: -0.03em; line-height: 1.05; color: var(--accent); }
+.p-bracket__particles { position: absolute; inset: -10% 0 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.p-bracket__particle {
+  position: absolute; top: -12px; border-radius: 2px; background: var(--accent); opacity: 0;
+  animation-name: p-bracket-fall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+.p-bracket__particle:nth-child(3n) { background: var(--success); border-radius: 999px; }
+.p-bracket__particle:nth-child(4n) { background: var(--fg); opacity: 0; }
+@keyframes p-bracket-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(var(--rot)); }
+  10% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(110vh) rotate(calc(var(--rot) + 360deg)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .p-bracket__particles { display: none; }
+  .p-bracket__pair--in { animation: none; }
+}

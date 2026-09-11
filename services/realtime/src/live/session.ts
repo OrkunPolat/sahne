@@ -2,13 +2,13 @@
 import { nanoid } from "nanoid";
 import {
   MAX_PARTICIPANTS,
-  type AnswerValue, type LeaderboardEntry, type Participant, type Reaction, type ServerMessage, type SessionMeta,
+  type AnswerValue, type BracketPlay, type BracketState, type LeaderboardEntry, type Participant, type Reaction, type ServerMessage, type SessionMeta,
   type SessionPhase, type SessionSnapshot, type Slide, type SlidePhase, type Tally, type Team, type TeamStanding,
 } from "@sahne/protocol";
 import {
-  allowsMultipleAnswers, buildLeaderboard, buildTally, buildTeamStandings, fastestCorrect, isScored, missedAnswer, pickTeam,
-  ranksOf, scoreAnswer, transition, validateAnswerForSlide,
-  type AnswerRecord, type HostAction, type Upvotes,
+  allowsMultipleAnswers, beginRun, buildLeaderboard, buildTally, buildTeamStandings, fastestCorrect, isScored, missedAnswer, pickTeam,
+  ranksOf, resolveMatch, scoreAnswer, transition, validateAnswerForSlide,
+  type AnswerRecord, type BracketRun, type HostAction, type Upvotes,
 } from "@sahne/engine";
 import type { Persistence } from "./persistence";
 
@@ -54,6 +54,8 @@ export class LiveSession {
   private scoredSlides = new Set<string>();
   private prevRanks = new Map<string, Map<string, number>>();     // slideId → reveal öncesi sıralar
   private prevTeamRanks = new Map<string, Map<string, number>>(); // slideId → reveal öncesi takım sıraları
+  /** bracket slaytları: slideId → turnuva koşusu (prev ile geri dönülünce bitmiş durum gösterilir). */
+  private bracketRuns = new Map<string, BracketRun>();
   private lockTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly now: () => number;
   private readonly log: (msg: string, err?: unknown) => void;
@@ -75,6 +77,12 @@ export class LiveSession {
   get currentSlide(): Slide | undefined { return this.idx >= 0 ? this.slides[this.idx] : undefined; }
   get participants(): Participant[] { return [...this.members.values()].map((m) => m.p); }
   get teamMode(): boolean { return this.meta.teams.length > 0; }
+  /** Güncel slayt bracket ise koşusu. */
+  private get bracket(): BracketRun | undefined {
+    const cur = this.currentSlide;
+    return cur?.type === "bracket" ? this.bracketRuns.get(cur.id) : undefined;
+  }
+  get bracketState(): BracketState | null { return this.bracket?.state ?? null; }
 
   private answersFor(slideId: string): Map<string, Answer> {
     let m = this.answers.get(slideId);
@@ -108,6 +116,7 @@ export class LiveSession {
       serverNow: this.now(),
       participants: this.participants,
       answeredCount: cur ? this.answeredCount(cur.id) : 0,
+      bracket: this.bracketState,
     };
   }
 
@@ -228,6 +237,8 @@ export class LiveSession {
   /* ---------- akış ---------- */
 
   hostAction(action: HostAction): boolean {
+    // Bracket slaydı: şampiyon yokken `next` slayt değiştirmez, bir sonraki eşleşmeyi açar (docs/API.md WS bracket).
+    if (action === "next" && this.phase === "live" && this.bracketNext()) return true;
     const next = transition({ phase: this.phase, slidePhase: this.slidePhase, idx: this.idx, total: this.slides.length }, action);
     if (!next) return false;
     this.clearLockTimer();
@@ -240,7 +251,7 @@ export class LiveSession {
       case "start":
       case "next": this.openSlide(); break;
       case "lock": this.broadcast({ t: "slide:phase", phase: "locked" }); break;
-      case "reveal": this.reveal(); break;
+      case "reveal": if (this.bracket) this.resolveBracketMatch(); this.reveal(); break;
       case "prev": {
         // Geri dönülen slayt "revealed" gelir: tam snapshot + reveal verisi tekrar gönderilir.
         this.broadcast({ t: "state:snapshot", snapshot: this.snapshot() });
@@ -255,21 +266,97 @@ export class LiveSession {
     const slide = this.currentSlide;
     if (!slide) return;
     this.slideStartedAt = this.now();
+    if (slide.type === "bracket") {
+      // Her açılışta yeni koşu (items sunucuda turnuvadan doldurulmuştur); önceki eşleşme oyları temizlenir.
+      this.answers.delete(slide.id);
+      this.bracketRuns.set(slide.id, beginRun(slide.id, slide.items, slide.size));
+    }
     this.broadcast({ t: "slide:open", slide, idx: this.idx, startedAt: this.slideStartedAt, serverNow: this.slideStartedAt });
+    if (slide.type === "bracket") this.broadcastBracket();
+    this.startLockTimer(slide);
+  }
+
+  private startLockTimer(slide: Slide) {
+    this.clearLockTimer();
     this.lockTimer = setTimeout(() => {
       this.lockTimer = null;
       if (this.currentSlide?.id === slide.id && this.slidePhase === "open") this.hostAction("lock");
     }, slide.timeLimitS * 1000 + AUTO_LOCK_GRACE_MS);
   }
 
+  /* ---------- bracket ---------- */
+
+  private broadcastBracket() {
+    const st = this.bracketState;
+    if (st) this.broadcast({ t: "bracket:state", state: st });
+  }
+
+  /** Mevcut eşleşmenin oylarını (a, b) döner. */
+  private bracketVotes(run: BracketRun): { votesA: number; votesB: number } {
+    const cur = run.state.current;
+    if (!cur) return { votesA: 0, votesB: 0 };
+    let votesA = 0, votesB = 0;
+    for (const a of this.answersFor(run.state.slideId).values()) {
+      if (a.value.kind !== "choice") continue;
+      if (a.value.optionIds[0] === cur.a.id) votesA++; else if (a.value.optionIds[0] === cur.b.id) votesB++;
+    }
+    return { votesA, votesB };
+  }
+
+  /** host:reveal: eşleşmeyi sonuçlandırır; şampiyon çıktıysa turnuva oyununu kaydeder. bracket:state herkese. */
+  private resolveBracketMatch() {
+    const run = this.bracket;
+    if (!run || !run.state.current || run.state.champion) return;
+    const { votesA, votesB } = this.bracketVotes(run);
+    const next = resolveMatch(run, votesA, votesB);
+    this.bracketRuns.set(run.state.slideId, next);
+    this.broadcastBracket();
+    if (next.state.champion) this.recordBracketPlay(next.state);
+  }
+
+  private recordBracketPlay(st: BracketState) {
+    const slide = this.currentSlide;
+    if (!slide || slide.type !== "bracket" || !st.champion) return;
+    const play: BracketPlay = { size: st.size, results: st.results, championId: st.champion.id };
+    this.persist.recordTournamentPlay(slide.tournamentId, play).catch((e) => this.log("recordTournamentPlay", e));
+  }
+
+  /**
+   * host:next bracket slaydında ve şampiyon yoksa: sonraki eşleşmeyi açar (oylar sıfır, timer yeniden),
+   * `bracket:state` + `slide:phase open` gönderir. Reveal edilmeden atlanırsa mevcut eşleşme önce sessizce sonuçlanır.
+   * Şampiyon belirlendiyse false → normal slayt geçişi.
+   */
+  private bracketNext(): boolean {
+    const slide = this.currentSlide;
+    let run = this.bracket;
+    if (!slide || slide.type !== "bracket" || !run) return false;
+    if (this.slidePhase !== "revealed" && run.state.current && !run.state.champion) {
+      this.resolveBracketMatch();
+      run = this.bracket!;
+    }
+    if (run.state.champion || !run.state.current) return false;
+    this.clearLockTimer();
+    this.answers.delete(slide.id);
+    this.slidePhase = "open";
+    this.slideStartedAt = this.now();
+    this.broadcastBracket();
+    this.broadcast({ t: "slide:phase", phase: "open" });
+    this.startLockTimer(slide);
+    return true;
+  }
+
   private clearLockTimer() {
     if (this.lockTimer) { clearTimeout(this.lockTimer); this.lockTimer = null; }
   }
 
-  /** Puanlama bir slayt için yalnızca bir kez uygulanır; tekrar reveal (prev) aynı sonucu yeniden yayınlar. */
+  /**
+   * Puanlama bir slayt için yalnızca bir kez uygulanır; tekrar reveal (prev) aynı sonucu yeniden yayınlar.
+   * Bracket slaydında her eşleşme için çağrılır: puansız, `correct: null`, tally o eşleşmenin oyları.
+   */
   private reveal() {
     const slide = this.currentSlide;
     if (!slide) return;
+    if (slide.type === "bracket") return this.revealBracket(slide);
     const answers = this.answersFor(slide.id);
     // Tek cevaplı slaytlarda pid → cevap; qa'da ilk cevap (puansız, sadece "cevapladı mı" için).
     const byPid = new Map<string, Answer>();
@@ -313,6 +400,22 @@ export class LiveSession {
     }
   }
 
+  private revealBracket(slide: Slide) {
+    const tally = this.tallyFor(slide);
+    const byPid = new Map<string, Answer>();
+    for (const a of this.answersFor(slide.id).values()) if (!byPid.has(a.participantId)) byPid.set(a.participantId, a);
+    const leaderboard = this.leaderboard();
+    const teams = this.teamStandings();
+    const base = { t: "slide:reveal" as const, slideId: slide.id, tally, correct: null, leaderboard, fastest: [], teams };
+    for (const h of this.hosts) h.send(base);
+    const byLb = new Map(leaderboard.map((e) => [e.participantId, e]));
+    for (const [pid, c] of this.players) {
+      const m = this.members.get(pid); const e = byLb.get(pid);
+      if (!m || !e) continue;
+      c.send({ ...base, you: { correct: null, pointsAwarded: 0, score: m.p.score, rank: e.rank, rankDelta: e.rankDelta, streak: m.p.streak } });
+    }
+  }
+
   private end() {
     this.endedAt = this.now();
     this.slideStartedAt = null;
@@ -336,6 +439,11 @@ export class LiveSession {
     const multi = allowsMultipleAnswers(slide);
     if (mine >= (multi ? MAX_QUESTIONS_PER_PARTICIPANT : 1)) return "already_answered";
     if (!validateAnswerForSlide(slide, value)) return "invalid";
+    if (slide.type === "bracket") {
+      const cur = this.bracket?.state.current;
+      const pick = value.kind === "choice" ? value.optionIds[0] : undefined;
+      if (!cur || (pick !== cur.a.id && pick !== cur.b.id)) return "invalid";
+    }
     const answeredAt = this.now();
     const msTaken = Math.max(0, answeredAt - (this.slideStartedAt ?? answeredAt));
     const id = nanoid(10);

@@ -13,6 +13,7 @@ import { PLAY_URL } from "@/lib/api";
 import { DemoButton } from "@/components/home/DemoButton";
 import { AiCard } from "@/components/home/AiCard";
 import { TemplateGallery } from "@/components/home/TemplateGallery";
+import { PopularTournaments } from "@/components/home/PopularTournaments";
 
 export default function HomePage() {
   const t = useT();
@@ -59,6 +60,7 @@ export default function HomePage() {
             <DemoButton className="s-btn s-btn--primary s-btn--lg" />
             <a href="#create" className="s-btn s-btn--lg">{t("host.ctaCreate")} →</a>
             <a href={PLAY_URL} className="s-btn s-btn--lg">{t("host.ctaJoin")}</a>
+            <Link href="/t" className="s-btn s-btn--lg">🏆 {t("tournament.nav")}</Link>
           </div>
           <p className="s-muted h-hero__hint">{t("host.tryNowHint")}</p>
         </section>
@@ -120,6 +122,7 @@ export default function HomePage() {
       </div>
 
         <TemplateGallery />
+        <PopularTournaments />
 
         <section className="h-section" id="features">
           <h2>{t("host.featuresTitle")}</h2>
@@ -132,6 +135,12 @@ export default function HomePage() {
                 <p className="s-muted">{t(`host.f${n}Text`)}</p>
               </div>
             ))}
+            <Link href="/t" className="s-card h-feature h-feature--link">
+              <span className="h-feature__n">🏆</span>
+              <h3>{t("tournament.homeCardTitle")}</h3>
+              <p className="s-muted">{t("tournament.homeCardText")}</p>
+              <span className="h-template__cta">{t("tournament.seeAll")} →</span>
+            </Link>
           </div>
         </section>
 

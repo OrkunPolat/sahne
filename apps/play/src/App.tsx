@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { AnswerValue, ClientMessage, FastestEntry, Reaction, ServerMessage, SessionSnapshot, Slide, SlidePhase, Team, TeamStanding, ThemeId } from "@sahne/protocol";
+import type { AnswerValue, BracketState, ClientMessage, FastestEntry, Reaction, ServerMessage, SessionSnapshot, Slide, SlidePhase, Tally, Team, TeamStanding, ThemeId } from "@sahne/protocol";
 import { useI18n } from "./lib/i18n";
 import { API_URL, wsEndpoint } from "./lib/env";
 import { readAnsweredSlide, readPlayer, writeAnsweredSlide, writePlayer, type StoredPlayer } from "./lib/storage";
@@ -16,10 +16,11 @@ import { Lobby } from "./screens/Lobby";
 import { SlideScreen, type QuestionsTally } from "./screens/SlideScreen";
 import { Reveal, type You } from "./screens/Reveal";
 import { Ended } from "./screens/Ended";
+import { BracketScreen, bracketAnswerKey } from "./screens/BracketScreen";
 
 interface Live { slide: Slide; idx: number; startedAt: number; phase: SlidePhase }
 type ErrorCode = Extract<ServerMessage, { t: "error" }>["code"];
-interface RevealState { slideId: string; you: You | undefined; fastest: FastestEntry[]; teams: TeamStanding[] }
+interface RevealState { slideId: string; you: You | undefined; fastest: FastestEntry[]; teams: TeamStanding[]; tally: Tally }
 
 export function App() {
   const { t } = useI18n();
@@ -37,6 +38,7 @@ export function App() {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
   const [avatarSeed, setAvatarSeed] = useState<string>(() => readPlayer()?.participantId ?? "");
   const [live, setLive] = useState<Live | null>(null);
+  const [bracket, setBracket] = useState<BracketState | null>(null);
   const [clockOffset, setClockOffset] = useState(0);
   const [answeredSlideId, setAnsweredSlideId] = useState<string | null>(() => readAnsweredSlide());
   const [sentValue, setSentValue] = useState<AnswerValue | null>(null);
@@ -61,7 +63,7 @@ export function App() {
 
   const leave = useCallback(() => {
     persistPlayer(null); markAnswered(null);
-    setSnapshot(null); setLive(null); setReveal(null); setLastYou(null); setEnded(false); setSentValue(null);
+    setSnapshot(null); setLive(null); setBracket(null); setReveal(null); setLastYou(null); setEnded(false); setSentValue(null);
     setEndedInfo({ teams: [], publicToken: null }); setQuestions(null); setReactions([]); setJoinTeams([]);
     setJoinStep("code");
   }, [persistPlayer, markAnswered]);
@@ -69,6 +71,17 @@ export function App() {
   // --- inbound ---
   const playerRef = useRef(player);
   playerRef.current = player;
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const bracketRef = useRef(bracket);
+  bracketRef.current = bracket;
+  const clockOffsetRef = useRef(clockOffset);
+  clockOffsetRef.current = clockOffset;
+  /** Bracket slaydında cevap anahtarı eşleşme bazlıdır. */
+  const answerKeyFor = useCallback((slideId: string): string => {
+    const b = bracketRef.current;
+    return liveRef.current?.slide.type === "bracket" && b && b.slideId === slideId ? bracketAnswerKey(slideId, b) : slideId;
+  }, []);
 
   const onMessage = useCallback((m: ServerMessage) => {
     switch (m.t) {
@@ -89,6 +102,7 @@ export function App() {
           const p = playerRef.current;
           if (p && me.teamId !== (p.teamId ?? null)) persistPlayer({ ...p, teamId: me.teamId });
         }
+        setBracket(s.bracket ?? null);
         if (s.phase === "ended") { setEnded(true); setLive(null); break; }
         const slide = s.currentSlideIdx >= 0 ? s.slides[s.currentSlideIdx] : undefined;
         if (s.phase === "live" && slide && s.slidePhase && s.slideStartedAt !== null) {
@@ -96,7 +110,7 @@ export function App() {
             if (prev?.slide.id !== slide.id) { setReveal(null); setSentValue(null); }
             return { slide, idx: s.currentSlideIdx, startedAt: s.slideStartedAt!, phase: s.slidePhase! };
           });
-          setAnsweredSlideId((prev) => (prev === slide.id ? prev : (writeAnsweredSlide(null), null)));
+          setAnsweredSlideId((prev) => (prev === slide.id || prev?.startsWith(`${slide.id}:`) ? prev : (writeAnsweredSlide(null), null)));
         } else {
           setLive(null);
         }
@@ -109,14 +123,30 @@ export function App() {
         break;
       }
       case "slide:phase":
+        // Bracket: host:next yeni eşleşmeyi slide:open yerine bracket:state + slide:phase open ile açar → seçim ve sayaç sıfırlanır.
+        if (m.phase === "open" && liveRef.current?.slide.type === "bracket") {
+          setReveal(null); setSentValue(null); markAnswered(null);
+          setLive((l) => (l ? { ...l, phase: "open", startedAt: Date.now() + clockOffsetRef.current } : l));
+          break;
+        }
         setLive((l) => (l ? { ...l, phase: m.phase } : l));
         break;
+      case "bracket:state": {
+        const prev = bracketRef.current;
+        bracketRef.current = m.state; // aynı tick'te gelen ikinci mesaj için güncel kalsın
+        setBracket(m.state);
+        // Sonuç listesi büyüdüyse eşleşme sonuçlanmıştır (host:reveal); mesaj sırasından bağımsız oyu kapat.
+        if (prev && prev.slideId === m.state.slideId && m.state.results.length > prev.results.length) {
+          setLive((l) => (l && l.slide.id === m.state.slideId && l.phase === "open" ? { ...l, phase: "revealed" } : l));
+        }
+        break;
+      }
       case "answer:ack":
-        markAnswered(m.slideId);
+        markAnswered(answerKeyFor(m.slideId));
         break;
       case "slide:reveal": {
         setLive((l) => (l ? { ...l, phase: "revealed" } : l));
-        setReveal({ slideId: m.slideId, you: m.you, fastest: m.fastest, teams: m.teams });
+        setReveal({ slideId: m.slideId, you: m.you, fastest: m.fastest, teams: m.teams, tally: m.tally });
         if (m.you) setLastYou(m.you);
         break;
       }
@@ -144,7 +174,7 @@ export function App() {
         // handleErrorRef üzerinden yönlendirilir (aşağıda).
         break;
     }
-  }, [persistPlayer, markAnswered, setTheme]);
+  }, [persistPlayer, markAnswered, setTheme, answerKeyFor]);
 
   const errorText = (code: ErrorCode): string | null => {
     switch (code) {
@@ -187,7 +217,7 @@ export function App() {
         markAnswered(null); setSentValue(null);
         break;
       case "already_answered":
-        if (live) markAnswered(live.slide.id);
+        if (live) markAnswered(answerKeyFor(live.slide.id));
         break;
       default:
         break;
@@ -256,6 +286,18 @@ export function App() {
     send({ t: "player:upvote", slideId: live.slide.id, questionId });
   };
 
+  const onPick = (itemId: string) => {
+    if (!live || !bracket || bracket.slideId !== live.slide.id) return;
+    const key = bracketAnswerKey(live.slide.id, bracket);
+    const value: AnswerValue = { kind: "choice", optionIds: [itemId] };
+    setSentValue(value);
+    markAnswered(key);
+    if (!send({ t: "player:answer", slideId: live.slide.id, value })) {
+      markAnswered(null); setSentValue(null);
+      showToast(t("play.networkError"));
+    }
+  };
+
   const onAnswer = (value: AnswerValue) => {
     if (!live) return;
     setSentValue(value);
@@ -287,6 +329,27 @@ export function App() {
         title={snapshot?.meta.title ?? ""} teamId={teamId} teamName={teamName} teams={endedInfo.teams} publicToken={endedInfo.publicToken} onLeave={leave}
       />
     );
+  } else if (live && live.slide.type === "bracket") {
+    withReactions = true;
+    if (bracket && bracket.slideId === live.slide.id) {
+      const isRevealed = live.phase === "revealed" || (reveal !== null && reveal.slideId === live.slide.id);
+      screen = (
+        <BracketScreen
+          key={live.slide.id}
+          slide={live.slide}
+          state={bracket}
+          startedAt={live.startedAt}
+          clockOffset={clockOffset}
+          locked={live.phase !== "open"}
+          reveal={isRevealed ? { tally: reveal?.slideId === live.slide.id && reveal.tally.kind === "choice" ? reveal.tally : null } : null}
+          sent={answeredSlideId === bracketAnswerKey(live.slide.id, bracket)}
+          pickedId={sentValue?.kind === "choice" ? sentValue.optionIds[0] ?? null : null}
+          onPick={onPick}
+        />
+      );
+    } else {
+      screen = <div className="p-center"><div className="p-state"><div className="p-sub">{t("common.loading")}</div></div></div>;
+    }
   } else if (live && reveal && reveal.slideId === live.slide.id) {
     withReactions = true;
     screen = <Reveal slide={live.slide} you={reveal.you} fastest={reveal.fastest} teams={reveal.teams} participantId={player.participantId} teamId={teamId} />;

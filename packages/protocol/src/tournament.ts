@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { Locale } from "./session";
+/** session.ts bu dosyayı import eder (BracketState); döngüsel import olmasın diye Locale burada tekrar tanımlı. */
+const Locale = z.enum(["tr", "en"]);
 
 /** Turnuva (ideal tip world cup): N aday, tek elemeli ikili seçim, şampiyon. */
 export const TournamentCategory = z.enum(["general", "movies", "music", "games", "anime", "food", "sports", "people", "places", "brands", "other"]);

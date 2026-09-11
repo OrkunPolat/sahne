@@ -1,5 +1,5 @@
 // LiveSession'ın dış dünyaya yazdığı her şey bu arayüzden geçer; testlerde no-op enjekte edilir.
-import type { AnswerValue, Participant, SessionPhase } from "@sahne/protocol";
+import type { AnswerValue, BracketPlay, Participant, SessionPhase } from "@sahne/protocol";
 
 export interface RevealRow {
   participantId: string;
@@ -18,6 +18,8 @@ export interface Persistence {
   setState(sessionId: string, state: SessionPhase, currentSlideIdx: number): Promise<void>;
   /** Oturum bitti: public_token + ended_at. */
   setEnded(sessionId: string, publicToken: string, endedAt: number): Promise<void>;
+  /** Canlı bracket şampiyonu belirlenince: tournament_plays (source live) + stats. */
+  recordTournamentPlay(tournamentId: string, play: BracketPlay): Promise<void>;
 }
 
 export const noopPersistence: Persistence = {
@@ -26,4 +28,5 @@ export const noopPersistence: Persistence = {
   saveReveal: async () => {},
   setState: async () => {},
   setEnded: async () => {},
+  recordTournamentPlay: async () => {},
 };

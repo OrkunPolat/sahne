@@ -4,6 +4,7 @@ import type { Slide } from "@sahne/protocol";
 import { useT } from "@/lib/providers";
 import { ModeBadge } from "./SlideList";
 import { slideTypeKey } from "./slides";
+import { BracketPicker } from "./BracketPicker";
 
 type Patch = Partial<Record<string, unknown>>;
 
@@ -96,6 +97,10 @@ export function SlideForm({ slide, onChange }: { slide: Slide; onChange: (next: 
           <span>{t("host.maxLength")}</span>
           <input className="s-input" type="number" min={20} max={500} value={slide.maxLength} onChange={(e) => patch({ maxLength: num(e.target.value, 200) })} />
         </label>
+      )}
+
+      {slide.type === "bracket" && (
+        <BracketPicker slide={slide} onChange={(p) => patch(p)} />
       )}
 
       {slide.type === "scale" && (

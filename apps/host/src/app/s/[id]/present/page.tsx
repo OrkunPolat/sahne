@@ -21,6 +21,7 @@ import { QaBoard } from "@/components/present/QaBoard";
 import { SeriesPanel } from "@/components/present/SeriesPanel";
 import { PublicLink } from "@/components/present/PublicLink";
 import { SoundToggle } from "@/components/present/SoundToggle";
+import { BracketStage } from "@/components/present/BracketStage";
 import { initSound, sfx } from "@/lib/sound";
 
 const FATAL_ERRORS = ["bad_code", "bad_secret", "session_ended"] as const;
@@ -149,6 +150,8 @@ export default function PresentPage() {
   const hasTeams = teams.length > 0;
   const endedTeams = state.teams;
   const publicToken = state.publicToken ?? snap.meta.publicToken;
+  const isBracket = slide?.type === "bracket";
+  const bracketOngoing = isBracket && !!state.bracket && !state.bracket.champion;
 
   return (
     <main className="p-stage">
@@ -173,7 +176,7 @@ export default function PresentPage() {
             <div style={{ display: "grid", gap: "clamp(24px, 4vh, 48px)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 32, justifyContent: "space-between" }}>
                 <div>
-                  <h1 className="p-question">{slide.text}</h1>
+                  {isBracket ? <h1 className="p-subtitle p-bracket__title">{slide.text}</h1> : <h1 className="p-question">{slide.text}</h1>}
                   {slide.type === "title" && slide.subtitle && <p className="p-subtitle" style={{ marginTop: 16 }}>{slide.subtitle}</p>}
                 </div>
                 {slide.type !== "title" && slidePhase === "open" && snap.slideStartedAt !== null && (
@@ -186,6 +189,7 @@ export default function PresentPage() {
               {slide.type === "open_ended" && <OpenCards tally={state.tally} />}
               {slide.type === "scale" && <ScaleBars slide={slide} tally={state.tally} />}
               {slide.type === "qa" && <QaBoard tally={state.tally} />}
+              {slide.type === "bracket" && <BracketStage slide={slide} bracket={state.bracket} tally={state.tally} revealed={revealed} />}
             </div>
             {revealed && isGame && (
               <div className="p-side">
@@ -233,7 +237,7 @@ export default function PresentPage() {
                 <button type="button" className="s-btn" onClick={actions.lock} disabled={slidePhase !== "open"}>{t("common.lock")}</button>
                 <button type="button" className="s-btn s-btn--primary" onClick={actions.reveal} disabled={!slidePhase || slidePhase === "revealed"}>{t("common.reveal")}</button>
                 <button type="button" className="s-btn s-btn--primary" onClick={actions.next}>
-                  {snap.currentSlideIdx >= snap.slides.length - 1 ? t("host.podium") : t("common.next")} →
+                  {bracketOngoing ? t("tournament.nextMatch") : snap.currentSlideIdx >= snap.slides.length - 1 ? t("host.podium") : t("common.next")} →
                 </button>
               </>
             )}

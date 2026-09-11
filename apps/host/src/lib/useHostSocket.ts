@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { ServerMessage, type ClientMessage, type FastestEntry, type LeaderboardEntry, type Reaction, type SessionSnapshot, type Tally, type TeamStanding } from "@sahne/protocol";
+import { ServerMessage, type BracketState, type ClientMessage, type FastestEntry, type LeaderboardEntry, type Reaction, type SessionSnapshot, type Tally, type TeamStanding } from "@sahne/protocol";
 import { WS_URL } from "./api";
 
 export type SocketStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -21,6 +21,8 @@ export type HostState = {
   publicToken: string | null;
   /** Büyük ekranda uçan tepkiler; en son 40 tanesi tutulur, bileşen süresi dolanları eler. */
   reactions: FloatingReaction[];
+  /** Canlı turnuva slaydının durumu (snapshot.bracket + bracket:state). */
+  bracket: BracketState | null;
   error: ErrorCode | null;
 };
 export type FloatingReaction = { id: number; emoji: Reaction; at: number; x: number };
@@ -31,7 +33,7 @@ type Action = { kind: "status"; status: SocketStatus } | { kind: "msg"; msg: Ser
 
 const initial: HostState = {
   status: "connecting", snapshot: null, clockOffset: 0, tally: null, answeredCount: 0,
-  reveal: null, podium: null, leaderboard: [], teams: [], publicToken: null, reactions: [], error: null,
+  reveal: null, podium: null, leaderboard: [], teams: [], publicToken: null, reactions: [], bracket: null, error: null,
 };
 
 function reduce(s: HostState, a: Action): HostState {
@@ -47,6 +49,7 @@ function reduce(s: HostState, a: Action): HostState {
         reveal: s.reveal && snap.slidePhase === "revealed" && snap.slides[snap.currentSlideIdx]?.id === s.reveal.slideId ? s.reveal : null,
         podium: snap.phase === "ended" ? s.podium : null,
         publicToken: snap.meta.publicToken ?? s.publicToken,
+        bracket: snap.bracket ?? null,
       };
     }
     case "participants:update":
@@ -57,11 +60,19 @@ function reduce(s: HostState, a: Action): HostState {
       slides[m.idx] = m.slide;
       return {
         ...s, tally: null, reveal: null, answeredCount: 0, clockOffset: m.serverNow - Date.now(),
+        bracket: m.slide.type === "bracket" ? s.bracket : null,
         snapshot: { ...s.snapshot, slides, phase: "live", currentSlideIdx: m.idx, slidePhase: "open", slideStartedAt: m.startedAt, serverNow: m.serverNow, answeredCount: 0 },
       };
     }
     case "slide:phase":
-      return s.snapshot ? { ...s, snapshot: { ...s.snapshot, slidePhase: m.phase } } : s;
+      // Bracket: sonraki eşleşme "open" ile açılır; eski oylar/tally sıfırlanır.
+      return s.snapshot
+        ? (m.phase === "open" && s.bracket
+          ? { ...s, tally: null, reveal: null, answeredCount: 0, snapshot: { ...s.snapshot, slidePhase: "open", slideStartedAt: Date.now() + s.clockOffset, answeredCount: 0 } }
+          : { ...s, snapshot: { ...s.snapshot, slidePhase: m.phase } })
+        : s;
+    case "bracket:state":
+      return { ...s, bracket: m.state };
     case "slide:tally":
       return { ...s, tally: m.tally, answeredCount: m.answeredCount };
     case "slide:reveal": {

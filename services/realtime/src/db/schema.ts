@@ -1,6 +1,6 @@
 // SPEC.md §4 veri modeli + docs/API.md "Dalga 2" eklemeleri. Slayt içeriği tam Slide nesnesi olarak jsonb'de tutulur.
 import { pgTable, text, varchar, integer, jsonb, timestamp, boolean, primaryKey, index, uniqueIndex } from "drizzle-orm/pg-core";
-import type { Slide, AnswerValue, Team } from "@sahne/protocol";
+import type { Slide, AnswerValue, Team, TournamentItem } from "@sahne/protocol";
 
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
@@ -66,3 +66,45 @@ export const answers = pgTable("answers", {
   isCorrect: boolean("is_correct"),
   pointsAwarded: integer("points_awarded").notNull().default(0),
 }, (t) => ({ slideIdx: index("answers_session_slide_idx").on(t.sessionId, t.slideId) }));
+
+/* ---------- Dalga 3: Turnuva (docs/API.md) ---------- */
+
+export const tournaments = pgTable("tournaments", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  category: text("category").notNull().default("general"),
+  locale: text("locale").notNull().default("tr"),
+  coverUrl: text("cover_url"),
+  items: jsonb("items").$type<TournamentItem[]>().notNull().default([]),
+  visibility: text("visibility").notNull().default("public"), // public | unlisted
+  ownerSecret: text("owner_secret").notNull(),
+  plays: integer("plays").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  slugUq: uniqueIndex("tournaments_slug_uq").on(t.slug),
+  latestIdx: index("tournaments_visibility_created_idx").on(t.visibility, t.createdAt, t.id),
+  popularIdx: index("tournaments_visibility_plays_idx").on(t.visibility, t.plays, t.createdAt, t.id),
+}));
+
+export const tournamentItemStats = pgTable("tournament_item_stats", {
+  tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  itemId: text("item_id").notNull(),
+  wins: integer("wins").notNull().default(0),
+  losses: integer("losses").notNull().default(0),
+  finals: integer("finals").notNull().default(0),
+  champions: integer("champions").notNull().default(0),
+}, (t) => ({ pk: primaryKey({ columns: [t.tournamentId, t.itemId] }) }));
+
+/** results saklanmaz; stats'a işlenir. */
+export const tournamentPlays = pgTable("tournament_plays", {
+  id: text("id").primaryKey(),
+  tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  size: integer("size").notNull(),
+  championId: text("champion_id").notNull(),
+  deviceId: text("device_id"),
+  source: text("source").notNull(), // solo | live
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({ tournamentIdx: index("tournament_plays_tournament_idx").on(t.tournamentId, t.createdAt) }));

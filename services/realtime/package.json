@@ -14,15 +14,18 @@
     "@anthropic-ai/sdk": "^0.125.0",
     "@sahne/engine": "workspace:*",
     "@sahne/protocol": "workspace:*",
+    "busboy": "^1.6.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
     "nanoid": "^5.0.9",
     "pdf-parse": "2.4.5",
     "postgres": "^3.4.5",
+    "sharp": "^0.35.4",
     "ws": "^8.18.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.4",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.5.13",
     "drizzle-kit": "^0.28.1",
