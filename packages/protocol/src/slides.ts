@@ -64,6 +64,14 @@ export const ScaleSlide = z.object({
   maxLabel: z.string().max(40).optional(),
 });
 
+/** Canlı Q&A: katılımcılar soru yazar ve birbirlerinin sorularını oylar; host en çok oylananı görür. */
+export const QaSlide = z.object({
+  ...base,
+  type: z.literal("qa"),
+  mode: z.literal("insight"),
+  maxLength: z.number().int().min(20).max(300).default(200),
+});
+
 export const Slide = z.discriminatedUnion("type", [
   TitleSlide,
   MultipleChoiceSlide,
@@ -71,6 +79,7 @@ export const Slide = z.discriminatedUnion("type", [
   WordCloudSlide,
   OpenEndedSlide,
   ScaleSlide,
+  QaSlide,
 ]);
 export type Slide = z.infer<typeof Slide>;
 export type SlideType = Slide["type"];
@@ -82,6 +91,8 @@ export const AnswerValue = z.union([
   z.object({ kind: z.literal("words"), words: z.array(z.string().min(1).max(30)).min(1).max(5) }),
   z.object({ kind: z.literal("text"), text: z.string().min(1).max(500) }),
   z.object({ kind: z.literal("scale"), value: z.number().int() }),
+  /** qa slaydı: bir katılımcı birden çok soru gönderebilir (her biri ayrı answer). */
+  z.object({ kind: z.literal("question"), text: z.string().min(1).max(300) }),
 ]);
 export type AnswerValue = z.infer<typeof AnswerValue>;
 
@@ -92,5 +103,10 @@ export const Tally = z.union([
   z.object({ kind: z.literal("words"), words: z.array(z.object({ text: z.string(), count: z.number() })), total: z.number() }),
   z.object({ kind: z.literal("text"), entries: z.array(z.object({ text: z.string(), at: z.number() })), total: z.number() }),
   z.object({ kind: z.literal("scale"), counts: z.record(z.string(), z.number()), avg: z.number(), total: z.number() }),
+  z.object({
+    kind: z.literal("questions"),
+    questions: z.array(z.object({ id: z.string(), text: z.string(), votes: z.number(), nickname: z.string(), at: z.number() })),
+    total: z.number(),
+  }),
 ]);
 export type Tally = z.infer<typeof Tally>;

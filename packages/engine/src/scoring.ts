@@ -67,6 +67,12 @@ export function validateAnswerForSlide(slide: Slide, value: AnswerValue): boolea
     case "word_cloud": return value.kind === "words" && value.words.length <= slide.maxEntries;
     case "open_ended": return value.kind === "text" && value.text.length <= slide.maxLength;
     case "scale": return value.kind === "scale" && value.value >= slide.min && value.value <= slide.max;
+    case "qa": return value.kind === "question" && value.text.length <= slide.maxLength;
     case "title": return false;
   }
+}
+
+/** Aynı katılımcı aynı slayta birden çok cevap verebilir mi? Sadece qa. */
+export function allowsMultipleAnswers(slide: Slide): boolean {
+  return slide.type === "qa";
 }

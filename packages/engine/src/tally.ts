@@ -1,11 +1,13 @@
 import type { AnswerValue, Slide, Tally } from "@sahne/protocol";
 
-export interface AnswerRecord { participantId: string; value: AnswerValue; answeredAt: number }
+export interface AnswerRecord { participantId: string; value: AnswerValue; answeredAt: number; /** qa: soru kimliği (answer id) */ id?: string; nickname?: string }
+/** qa slaydı için oylar: questionId → oy veren participantId'ler. */
+export type Upvotes = Map<string, Set<string>>;
 
 const norm = (w: string) => w.trim().toLocaleLowerCase("tr").replace(/\s+/g, " ");
 
 /** Slayt tipine göre toplu sonuç. Saf, sıralı, deterministik. */
-export function buildTally(slide: Slide, answers: AnswerRecord[]): Tally {
+export function buildTally(slide: Slide, answers: AnswerRecord[], upvotes?: Upvotes): Tally {
   switch (slide.type) {
     case "multiple_choice": {
       const counts: Record<string, number> = Object.fromEntries(slide.options.map((o) => [o.id, 0]));
@@ -37,6 +39,13 @@ export function buildTally(slide: Slide, answers: AnswerRecord[]): Tally {
       let sum = 0, n = 0;
       for (const a of answers) if (a.value.kind === "scale") { counts[String(a.value.value)] = (counts[String(a.value.value)] ?? 0) + 1; sum += a.value.value; n++; }
       return { kind: "scale", counts, avg: n ? Math.round((sum / n) * 100) / 100 : 0, total: answers.length };
+    }
+    case "qa": {
+      const questions = answers
+        .filter((a) => a.value.kind === "question" && a.id)
+        .map((a) => ({ id: a.id!, text: (a.value as { text: string }).text, votes: upvotes?.get(a.id!)?.size ?? 0, nickname: a.nickname ?? "", at: a.answeredAt }))
+        .sort((x, y) => y.votes - x.votes || x.at - y.at);
+      return { kind: "questions", questions, total: answers.length };
     }
     case "title":
       return { kind: "text", entries: [], total: 0 };

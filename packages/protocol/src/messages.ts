@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AnswerValue, Slide, Tally } from "./slides";
-import { LeaderboardEntry, Participant, SessionSnapshot, SlidePhase } from "./session";
+import { FastestEntry, LeaderboardEntry, Participant, SessionSnapshot, SlidePhase, TeamStanding } from "./session";
 
 /* ---------- Client → Server ---------- */
 
@@ -13,13 +13,28 @@ export const HostStart = z.object({ t: z.literal("host:start") });
 export const HostEnd = z.object({ t: z.literal("host:end") });
 export const HostKick = z.object({ t: z.literal("host:kick"), participantId: z.string() });
 
-export const PlayerJoin = z.object({ t: z.literal("player:join"), code: z.string(), nickname: z.string().min(1).max(20) });
+export const PlayerJoin = z.object({
+  t: z.literal("player:join"),
+  code: z.string(),
+  nickname: z.string().min(1).max(20),
+  /** Cihaz kimliği (localStorage, rastgele). Seri tablosu ve "aynı cihaz" eşlemesi için. */
+  deviceId: z.string().max(40).optional(),
+  /** Takım modu açıksa katılımcının seçtiği takım; yoksa sunucu atar. */
+  teamId: z.string().optional(),
+});
 export const PlayerResume = z.object({ t: z.literal("player:resume"), code: z.string(), token: z.string() });
 export const PlayerAnswer = z.object({ t: z.literal("player:answer"), slideId: z.string(), value: AnswerValue });
+export const REACTION_EMOJIS = ["👏", "🔥", "😂", "❤️", "🤔", "❓"] as const;
+export const Reaction = z.enum(REACTION_EMOJIS);
+export type Reaction = z.infer<typeof Reaction>;
+/** Herhangi bir anda gönderilebilir; sunucu kişi başı saniyede 2 ile sınırlar. */
+export const PlayerReact = z.object({ t: z.literal("player:react"), emoji: Reaction });
+/** qa slaydında bir soruyu oylama (toggle). */
+export const PlayerUpvote = z.object({ t: z.literal("player:upvote"), slideId: z.string(), questionId: z.string() });
 
 export const ClientMessage = z.discriminatedUnion("t", [
   HostJoin, HostNext, HostPrev, HostLock, HostReveal, HostStart, HostEnd, HostKick,
-  PlayerJoin, PlayerResume, PlayerAnswer,
+  PlayerJoin, PlayerResume, PlayerAnswer, PlayerReact, PlayerUpvote,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -32,6 +47,7 @@ export const PlayerJoined = z.object({
   token: z.string(),
   nickname: z.string(),
   avatarSeed: z.string(),
+  teamId: z.string().nullable().default(null),
 });
 export const ParticipantsUpdate = z.object({ t: z.literal("participants:update"), participants: z.array(Participant) });
 export const SlideOpen = z.object({
@@ -51,19 +67,31 @@ export const SlideReveal = z.object({
   tally: Tally,
   correct: z.union([z.array(z.string()), z.boolean(), z.null()]),
   leaderboard: z.array(LeaderboardEntry),
+  /** Puanlı slaytta en hızlı 3 doğru cevap. */
+  fastest: z.array(FastestEntry).default([]),
+  /** Takım modu açıksa takım sıralaması. */
+  teams: z.array(TeamStanding).default([]),
   you: z
     .object({ correct: z.boolean().nullable(), pointsAwarded: z.number(), score: z.number(), rank: z.number(), rankDelta: z.number(), streak: z.number() })
     .optional(),
 });
-export const SessionEnded = z.object({ t: z.literal("session:ended"), podium: z.array(LeaderboardEntry) });
+export const SessionEnded = z.object({
+  t: z.literal("session:ended"),
+  podium: z.array(LeaderboardEntry),
+  teams: z.array(TeamStanding).default([]),
+  /** Herkese açık sonuç sayfası: HOST_URL/r/<publicToken>. */
+  publicToken: z.string().nullable().default(null),
+});
+/** Herkese yayınlanır (host ekranında uçar). */
+export const ReactionBroadcast = z.object({ t: z.literal("reaction"), emoji: Reaction, participantId: z.string() });
 export const ErrorMessage = z.object({
   t: z.literal("error"),
-  code: z.enum(["bad_code", "bad_secret", "nickname_taken", "session_full", "session_ended", "not_open", "already_answered", "invalid", "kicked"]),
+  code: z.enum(["bad_code", "bad_secret", "nickname_taken", "session_full", "session_ended", "not_open", "already_answered", "invalid", "kicked", "rate_limited", "bad_team"]),
   message: z.string().optional(),
 });
 
 export const ServerMessage = z.discriminatedUnion("t", [
-  StateSnapshot, PlayerJoined, ParticipantsUpdate, SlideOpen, SlidePhaseChange, SlideTally, AnswerAck, SlideReveal, SessionEnded, ErrorMessage,
+  StateSnapshot, PlayerJoined, ParticipantsUpdate, SlideOpen, SlidePhaseChange, SlideTally, AnswerAck, SlideReveal, SessionEnded, ErrorMessage, ReactionBroadcast,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 

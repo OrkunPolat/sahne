@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Slide, Participant } from "@sahne/protocol";
-import { scoreAnswer, speedFactor, streakBonus, buildTally, buildLeaderboard, ranksOf, transition, validateAnswerForSlide } from "./index";
+import { scoreAnswer, speedFactor, streakBonus, buildTally, buildLeaderboard, ranksOf, transition, validateAnswerForSlide, fastestCorrect, buildTeamStandings, pickTeam } from "./index";
 
 const mc: Slide = { id: "s1", idx: 0, type: "multiple_choice", mode: "game", text: "Q", timeLimitS: 20, points: 1000,
   options: [{ id: "a", text: "A" }, { id: "b", text: "B" }], correctOptionIds: ["a"] };
@@ -56,9 +56,9 @@ describe("tally", () => {
 
 describe("leaderboard", () => {
   const ps: Participant[] = [
-    { id: "1", nickname: "b", avatarSeed: "1", score: 10, streak: 0, connected: true },
-    { id: "2", nickname: "a", avatarSeed: "2", score: 10, streak: 0, connected: true },
-    { id: "3", nickname: "c", avatarSeed: "3", score: 50, streak: 0, connected: true },
+    { id: "1", nickname: "b", avatarSeed: "1", score: 10, streak: 0, connected: true, teamId: null },
+    { id: "2", nickname: "a", avatarSeed: "2", score: 10, streak: 0, connected: true, teamId: null },
+    { id: "3", nickname: "c", avatarSeed: "3", score: 50, streak: 0, connected: true, teamId: null },
   ];
   it("sorts and computes delta", () => {
     const prev = ranksOf(buildLeaderboard(ps.map((p) => ({ ...p, score: 0 }))));
@@ -80,5 +80,37 @@ describe("state machine", () => {
   });
   it("rejects start with no slides", () => {
     expect(transition({ phase: "lobby", slidePhase: null, idx: -1, total: 0 }, "start")).toBeNull();
+  });
+});
+
+describe("qa tally", () => {
+  const qa: Slide = { id: "q", idx: 0, type: "qa", mode: "insight", text: "Sorular?", timeLimitS: 60, points: 0, maxLength: 200 };
+  it("sorts by votes then time", () => {
+    const up = new Map([["b", new Set(["p1", "p2"])], ["a", new Set(["p3"])]]);
+    const t = buildTally(qa, [
+      { id: "a", participantId: "p1", nickname: "A", value: { kind: "question", text: "ilk" }, answeredAt: 1 },
+      { id: "b", participantId: "p2", nickname: "B", value: { kind: "question", text: "ikinci" }, answeredAt: 2 },
+    ], up);
+    expect(t.kind === "questions" && t.questions.map((q) => [q.id, q.votes])).toEqual([["b", 2], ["a", 1]]);
+  });
+});
+
+describe("fastest + teams", () => {
+  const ps: Participant[] = [
+    { id: "1", nickname: "a", avatarSeed: "1", score: 100, streak: 0, connected: true, teamId: "t1" },
+    { id: "2", nickname: "b", avatarSeed: "2", score: 300, streak: 0, connected: true, teamId: "t1" },
+    { id: "3", nickname: "c", avatarSeed: "3", score: 250, streak: 0, connected: true, teamId: "t2" },
+  ];
+  it("fastest correct top n", () => {
+    const f = fastestCorrect([{ participantId: "1", msTaken: 900, correct: true }, { participantId: "2", msTaken: 400, correct: true }, { participantId: "3", msTaken: 100, correct: false }], ps, 3);
+    expect(f.map((e) => e.participantId)).toEqual(["2", "1"]);
+  });
+  it("team standings by average", () => {
+    const st = buildTeamStandings([{ id: "t1", name: "Kırmızı" }, { id: "t2", name: "Mavi" }], ps);
+    expect(st.map((t) => [t.teamId, t.avgScore, t.rank])).toEqual([["t2", 250, 1], ["t1", 200, 2]]);
+  });
+  it("pickTeam picks least populated", () => {
+    expect(pickTeam([{ id: "t1", name: "x" }, { id: "t2", name: "y" }], ps)).toBe("t2");
+    expect(pickTeam([], ps)).toBeNull();
   });
 });
