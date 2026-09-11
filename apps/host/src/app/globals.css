@@ -132,3 +132,51 @@ a.s-btn { text-decoration: none; }
 .p-kbd kbd { font-family: inherit; padding: 1px 6px; border: 1px solid var(--border); border-radius: 6px; margin: 0 2px; }
 .p-center { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 32px; }
 .p-idx { font-family: var(--font-display); color: var(--fg-muted); font-weight: 700; }
+
+/* ---- landing (ana sayfa): header, hero, özellikler, adımlar, footer ---- */
+.h-landing { padding-top: 40px; }
+.h-site-header { position: sticky; top: 0; z-index: 40; backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); background: color-mix(in srgb, var(--bg) 72%, transparent); border-bottom: 1px solid var(--border); }
+.h-site-header__inner { max-width: 1200px; margin: 0 auto; padding: 12px clamp(20px, 5vw, 64px); display: flex; align-items: center; gap: 28px; }
+.h-brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; color: var(--fg); text-decoration: none; }
+.h-brand--muted { color: var(--fg-muted); font-size: 1rem; }
+.h-nav { display: flex; gap: 22px; margin-left: 8px; }
+.h-nav a { color: var(--fg-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color var(--dur); }
+.h-nav a:hover { color: var(--fg); }
+.h-site-header__ctl { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.h-nav-cta { padding: 9px 16px; font-size: 0.9rem; }
+@media (max-width: 760px) { .h-nav, .h-nav-cta { display: none; } }
+
+.h-landing .h-hero { margin: 24px 0 40px; gap: 14px; max-width: 760px; }
+.h-landing .h-hero h1 { font-size: clamp(36px, 5.2vw, 60px); font-weight: 800; line-height: 1.04; }
+.h-landing .h-hero p { font-size: 1.05rem; max-width: 56ch; line-height: 1.55; }
+.h-accent { color: var(--accent); }
+.h-landing .h-hero .h-actions { margin-top: 6px; gap: 10px; }
+.h-landing .h-form h2, .h-landing .h-grid h2 { font-size: 1.25rem; }
+.h-landing .h-form { padding: 24px; }
+
+.h-section { margin-top: 72px; }
+.h-section h2 { font-size: clamp(24px, 3vw, 32px); margin-bottom: 8px; }
+.h-section__lead { max-width: 60ch; margin: 0 0 22px; line-height: 1.55; }
+.h-features { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.h-feature { padding: 20px 20px 22px; display: grid; gap: 8px; align-content: start; transition: border-color var(--dur), transform 200ms var(--ease-out); }
+.h-feature:hover { border-color: var(--accent); transform: translateY(-2px); }
+.h-feature__n { font-family: var(--font-display); font-weight: 800; color: var(--accent); font-size: 0.8rem; letter-spacing: 0.08em; }
+.h-feature h3 { font-size: 1.05rem; }
+.h-feature p { margin: 0; font-size: 0.92rem; line-height: 1.5; }
+.h-steps { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.h-step { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-glass); }
+.h-step__n { flex: none; width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; background: var(--accent); color: var(--accent-fg); font-family: var(--font-display); font-weight: 800; }
+.h-step h3 { font-size: 1rem; margin-bottom: 4px; }
+.h-step p { margin: 0; font-size: 0.92rem; line-height: 1.5; }
+
+.h-site-footer { margin-top: 80px; border-top: 1px solid var(--border); }
+.h-site-footer__inner { max-width: 1200px; margin: 0 auto; padding: 28px clamp(20px, 5vw, 64px); display: grid; gap: 10px 28px; grid-template-columns: auto 1fr auto; align-items: center; }
+.h-site-footer p { margin: 0; font-size: 0.85rem; }
+.h-footer-links { display: flex; gap: 18px; }
+.h-footer-links a { color: var(--fg-muted); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+.h-footer-links a:hover { color: var(--fg); }
+.h-copy { grid-column: 1 / -1; font-size: 0.8rem; }
+@media (max-width: 700px) { .h-site-footer__inner { grid-template-columns: 1fr; } }
+.h-list-item { flex-wrap: wrap; }
+.h-list-item .grow { flex: 1 1 160px; }
+@media (max-width: 760px) { .h-site-header__inner { gap: 14px; } .h-site-header__ctl { gap: 8px; } }

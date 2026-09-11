@@ -8,6 +8,8 @@ import { LOCALES, LOCALE_LABELS } from "@sahne/i18n";
 import { useT } from "@/lib/providers";
 import { ApiError, createSession } from "@/lib/api";
 import { readRegistry, removeFromRegistry, saveToRegistry, type HostSession } from "@/lib/registry";
+import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { PLAY_URL } from "@/lib/api";
 
 export default function HomePage() {
   const t = useT();
@@ -40,14 +42,23 @@ export default function HomePage() {
     setSessions(readRegistry());
   }
 
-  return (
-    <main className="h-page">
-      <header className="h-hero s-fade-in">
-        <h1>{t("common.appName")}</h1>
-        <p className="s-muted">{t("host.tagline")}</p>
-      </header>
+  const features = [1, 2, 3, 4] as const;
+  const steps = [1, 2, 3] as const;
 
-      <div className="h-grid">
+  return (
+    <>
+      <SiteHeader />
+      <main className="h-page h-landing">
+        <section className="h-hero s-fade-in">
+          <h1>{t("host.heroTitle")} <span className="h-accent">{t("host.heroTitleAccent")}</span></h1>
+          <p className="s-muted">{t("host.heroLead")}</p>
+          <div className="h-actions">
+            <a href="#create" className="s-btn s-btn--primary s-btn--lg">{t("host.ctaCreate")} →</a>
+            <a href={PLAY_URL} className="s-btn s-btn--lg">{t("host.ctaJoin")}</a>
+          </div>
+        </section>
+
+        <div className="h-grid" id="create">
         <form className="s-card s-card--glow h-form" onSubmit={onSubmit}>
           <h2>{t("host.newSession")}</h2>
           <label>
@@ -98,6 +109,37 @@ export default function HomePage() {
           )}
         </section>
       </div>
-    </main>
+
+        <section className="h-section" id="features">
+          <h2>{t("host.featuresTitle")}</h2>
+          <p className="s-muted h-section__lead">{t("host.featuresLead")}</p>
+          <div className="h-features">
+            {features.map((n) => (
+              <div key={n} className="s-card h-feature">
+                <span className="h-feature__n">0{n}</span>
+                <h3>{t(`host.f${n}Title`)}</h3>
+                <p className="s-muted">{t(`host.f${n}Text`)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="h-section" id="how">
+          <h2>{t("host.howTitle")}</h2>
+          <ol className="h-steps">
+            {steps.map((n) => (
+              <li key={n} className="h-step">
+                <span className="h-step__n">{n}</span>
+                <div>
+                  <h3>{t(`host.h${n}Title`)}</h3>
+                  <p className="s-muted">{t(`host.h${n}Text`)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
