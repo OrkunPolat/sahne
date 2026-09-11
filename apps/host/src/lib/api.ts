@@ -1,7 +1,22 @@
 import type { Locale, SessionMeta, SessionPhase, Slide, ThemeId } from "@sahne/protocol";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100";
-export const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4100";
+const KEY = "sahne.apiUrl";
+/** ?api=https://realtime.example → localStorage → env → localhost. Deploy edilmiş host, realtime nerede olursa olsun bağlanabilsin. */
+function resolveApi(): string {
+  if (typeof window !== "undefined") {
+    try {
+      const q = new URLSearchParams(window.location.search).get("api");
+      if (q) { localStorage.setItem(KEY, q.replace(/\/+$/, "")); window.history.replaceState(null, "", window.location.pathname); }
+      const stored = localStorage.getItem(KEY);
+      if (stored) return stored;
+    } catch { /* ignore */ }
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100";
+}
+export const API_URL = resolveApi();
+export const WS_URL = typeof window !== "undefined" && localStorage.getItem(KEY)
+  ? API_URL.replace(/^http/, "ws")
+  : (process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4100");
 export const PLAY_URL = process.env.NEXT_PUBLIC_PLAY_URL ?? "http://localhost:5173";
 
 export class ApiError extends Error {

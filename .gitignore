@@ -6,3 +6,4 @@ dist
 *.tsbuildinfo
 .turbo
 .next-build
+.vercel
