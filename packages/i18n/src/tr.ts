@@ -50,6 +50,7 @@ export const tr = {
     aiAppend: "Mevcut slaytların sonuna eklenir.",
     aiDisabled: "AI üretimi sunucuda kapalı (ANTHROPIC_API_KEY yok).",
     generating: "Üretiliyor…",
+    scanQr: "Ya da karekodu telefonunla okut",
     newSession: "Yeni oturum",
     sessionTitle: "Oturum başlığı",
     sessionTitlePlaceholder: "Örn. Cuma ekip toplantısı",

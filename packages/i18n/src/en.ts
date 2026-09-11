@@ -52,6 +52,7 @@ export const en: Dictionary = {
     aiAppend: "Appended after existing slides.",
     aiDisabled: "AI generation is off on the server (no ANTHROPIC_API_KEY).",
     generating: "Generating…",
+    scanQr: "Or scan the QR code with your phone",
     newSession: "New session",
     sessionTitle: "Session title",
     sessionTitlePlaceholder: "e.g. Friday team meeting",

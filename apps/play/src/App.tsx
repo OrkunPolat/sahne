@@ -171,6 +171,16 @@ export function App() {
   });
 
   // --- join handlers ---
+  // Karekod ile geliş: ?code=XXXXXX → doğrula ve takma ad adımına geç.
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get("code");
+    if (q && /^\d{6}$/.test(q)) {
+      history.replaceState(null, "", location.pathname);
+      void onCode(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onCode = async (code: string) => {
     setBusy(true);
     try {

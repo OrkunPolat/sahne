@@ -3,6 +3,8 @@
 import { Avatar } from "@sahne/ui";
 import type { Participant } from "@sahne/protocol";
 import { useT } from "@/lib/providers";
+import { JoinQr } from "@/components/JoinQr";
+import { PLAY_URL } from "@/lib/api";
 
 export function Lobby({ code, playHost, participants, onStart, canStart }: { code: string; playHost: string; participants: Participant[]; onStart: () => void; canStart: boolean }) {
   const t = useT();
@@ -13,6 +15,10 @@ export function Lobby({ code, playHost, participants, onStart, canStart }: { cod
         <div className="url">{playHost}</div>
         <div className="lead">{t("host.enterCode")}</div>
         <div className="code">{code}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 18 }}>
+          <JoinQr url={`${PLAY_URL}/?code=${code}`} size={180} />
+          <div className="lead" style={{ maxWidth: 220 }}>{t("host.scanQr")}</div>
+        </div>
       </div>
       <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

@@ -7,6 +7,7 @@ import type { SessionMeta, SessionPhase, Slide, SlideType } from "@sahne/protoco
 import { useT } from "@/lib/providers";
 import { ApiError, getSession, putSlides, PLAY_URL } from "@/lib/api";
 import { findInRegistry, type HostSession } from "@/lib/registry";
+import { JoinQr } from "@/components/JoinQr";
 import { AiPanel } from "@/components/editor/AiPanel";
 import { SlideList } from "@/components/editor/SlideList";
 import { SlideForm } from "@/components/editor/SlideForm";
@@ -99,6 +100,7 @@ export default function EditPage() {
             <div className="url">{t("host.joinAt")} <b>{playHost}</b> · {t("host.enterCode")}</div>
             <div className="h-code code">{code}</div>
           </div>
+          <JoinQr url={`${PLAY_URL}/?code=${meta?.code ?? reg.code}`} size={96} />
           <button type="button" className="s-btn" onClick={copyPlay}>{copied ? `✓ ${t("host.copied")}` : `⧉ ${t("host.copyLink")}`}</button>
           <Link className="s-btn s-btn--primary s-btn--lg" href={`/s/${reg.id}/present`}>{t("host.present")} →</Link>
         </div>
