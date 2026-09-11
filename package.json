@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "dev": "pnpm -r --parallel --filter ./apps/* --filter ./services/* dev",
-    "build": "pnpm -r build",
+    "build": "pnpm -r --filter '!@sahne/host' build && pnpm --filter @sahne/host build:local",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "db:up": "docker compose up -d db",
