@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "play",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@sahne/play",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "host",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@sahne/host",
+        "dev"
+      ],
+      "port": 3000
+    }
+  ]
+}
