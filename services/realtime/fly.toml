@@ -1,0 +1,16 @@
+# fly launch --copy-config --no-deploy ; fly secrets set DATABASE_URL=... ; fly deploy
+app = "sahne-realtime"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+  # build context repo kökü olmalı: `fly deploy --config services/realtime/fly.toml --dockerfile services/realtime/Dockerfile .`
+
+[env]
+  REALTIME_PORT = "4100"
+
+[http_service]
+  internal_port = 4100
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1

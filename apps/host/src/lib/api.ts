@@ -44,3 +44,16 @@ export function getSession(id: string, secret: string) {
 export function putSlides(id: string, secret: string, slides: Slide[]) {
   return request<{ slides: Slide[] }>(`/api/sessions/${id}/slides`, { method: "PUT", secret, body: JSON.stringify({ slides }) });
 }
+
+export type Results = { slides: { slide: Slide; tally: import("@sahne/protocol").Tally }[]; leaderboard: import("@sahne/protocol").LeaderboardEntry[] };
+export function getResults(id: string, secret: string) {
+  return request<Results>(`/api/sessions/${id}/results`, { secret });
+}
+
+export function getHealth() {
+  return request<{ ok: boolean; ai: boolean }>("/health");
+}
+
+export function generateSlides(id: string, secret: string, body: { prompt: string; count: number; locale: Locale; mode: "game" | "insight" | "mixed" }) {
+  return request<{ slides: Slide[] }>(`/api/sessions/${id}/ai`, { method: "POST", secret, body: JSON.stringify(body) });
+}

@@ -5,6 +5,7 @@ import { Locale, Slide, ThemeId } from "@sahne/protocol";
 import { createSession, getSession, getSessionByCode, getSlides, replaceSlides, resultsFromDb, rowToMeta } from "../db/repo";
 import type { Registry } from "../live/registry";
 import { CORS_HEADERS, HttpError, json, readBody, sendError } from "./util";
+import { AiBody, aiEnabled, generateSlides } from "./ai";
 
 const CreateBody = z.object({ title: z.string().min(1).max(80), themeDefault: ThemeId.default("midnight-gold"), localeDefault: Locale.default("tr") });
 const SlidesBody = z.object({ slides: z.array(Slide) });
@@ -28,7 +29,13 @@ async function authed(req: IncomingMessage, id: string) {
 
 export function buildRouter(registry: Registry) {
   const routes: Route[] = [
-    route("GET", "/health", async (_req, res) => json(res, 200, { ok: true })),
+    route("GET", "/health", async (_req, res) => json(res, 200, { ok: true, ai: aiEnabled() })),
+
+    route("POST", "/api/sessions/:id/ai", async (req, res, { id }) => {
+      await authed(req, id!);
+      const body = await readBody(req, AiBody);
+      json(res, 200, { slides: await generateSlides(body) });
+    }),
 
     route("POST", "/api/sessions", async (req, res) => {
       const body = await readBody(req, CreateBody);

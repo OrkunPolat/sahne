@@ -11,6 +11,7 @@ import { findInRegistry, type HostSession } from "@/lib/registry";
 import { useHostSocket } from "@/lib/useHostSocket";
 import { Lobby } from "@/components/present/Lobby";
 import { Leaderboard } from "@/components/present/Leaderboard";
+import { ExportButtons } from "@/components/present/ExportButtons";
 import { Podium } from "@/components/present/Podium";
 import { ChoiceTiles, OpenCards, ScaleBars, TrueFalseTiles, WordCloud } from "@/components/present/TallyViews";
 
@@ -165,7 +166,12 @@ export default function PresentPage() {
             <button type="button" className="s-btn s-btn--ghost" onClick={actions.end}>{t("common.end")}</button>
           </div>
         )}
-        {phase === "ended" && <Link className="s-btn" href="/">{t("host.mySessions")}</Link>}
+        {phase === "ended" && (
+          <>
+            <ExportButtons sessionId={reg!.id} secret={reg!.hostSecret} title={snap.meta.title} />
+            <Link className="s-btn" href="/">{t("host.mySessions")}</Link>
+          </>
+        )}
       </div>
 
       {state.status !== "open" && (

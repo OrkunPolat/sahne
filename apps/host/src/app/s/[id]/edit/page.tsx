@@ -7,6 +7,7 @@ import type { SessionMeta, SessionPhase, Slide, SlideType } from "@sahne/protoco
 import { useT } from "@/lib/providers";
 import { ApiError, getSession, putSlides, PLAY_URL } from "@/lib/api";
 import { findInRegistry, type HostSession } from "@/lib/registry";
+import { AiPanel } from "@/components/editor/AiPanel";
 import { SlideList } from "@/components/editor/SlideList";
 import { SlideForm } from "@/components/editor/SlideForm";
 import { newSlide, reindex, validateSlides } from "@/components/editor/slides";
@@ -111,6 +112,9 @@ export default function EditPage() {
         <div style={{ display: "grid", gap: 16 }}>
           {current ? <SlideForm key={current.id} slide={current} onChange={onChange} /> : <div className="s-card h-empty">{t("host.addSlide")}</div>}
           {errors.length > 0 && <div className="h-errors" role="alert">{errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
+          {phase !== "live" && !loadError && (
+            <AiPanel sessionId={reg.id} secret={reg.hostSecret} onSlides={(gen) => { mutate((prev) => [...prev, ...gen]); setSelected(gen[0]?.id ?? null); }} />
+          )}
           <div className="h-actions" style={{ justifyContent: "flex-end", alignItems: "center" }}>
             {saved && !dirty && <span className="s-chip">✓ {t("host.saved")}</span>}
             <button type="button" className="s-btn s-btn--primary s-btn--lg" onClick={onSave} disabled={saving || !!loadError}>
