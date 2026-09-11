@@ -1,0 +1,16 @@
+{
+  "name": "sahne",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter ./apps/* --filter ./services/* dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:up": "docker compose up -d db",
+    "db:push": "pnpm --filter @sahne/realtime db:push"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

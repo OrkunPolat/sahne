@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sahne-db
+    environment:
+      POSTGRES_USER: sahne
+      POSTGRES_PASSWORD: sahne
+      POSTGRES_DB: sahne
+    ports:
+      - "5433:5432"
+    volumes:
+      - sahne-db:/var/lib/postgresql/data
+volumes:
+  sahne-db:
