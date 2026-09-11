@@ -135,7 +135,7 @@ Kahoot'un 4 şekil desenini korur: ▲ ◆ ● ■. Renkler her temada palete uy
 1. ✅ **Temel** — monorepo, `protocol` + `engine` (puanlama testli), Postgres şema, ws sunucusu, host'ta oturum oluştur + katılımcı katıl + çoktan seçmeli tek slayt uçtan uca. Tema/dil altyapısı bu fazda kurulur, tek tema ile.
 2. ✅ **Slayt seti + game döngüsü** — kalan slayt tipleri, sayaç, reveal, liderlik, podyum, yeniden bağlanma.
 3. ✅ **Premium cila** — 4 tema tamam, hareket, tipografi, büyük ekran/telefon ayrımı, kontrast testleri, EN sözlük tamam.
-4. **Opsiyonel** — export, AI'dan quiz üretimi, takım modu.
+4. **Opsiyonel** — ✅ export (CSV/JSON), ✅ AI'dan quiz üretimi, ⏸ takım modu (yapılmadı).
 
 ## 9. Açık kararlar
 
