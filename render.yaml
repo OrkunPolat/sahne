@@ -1,0 +1,17 @@
+# Render Blueprint — realtime servisi (Docker, ücretsiz plan). DATABASE_URL dashboard'dan/CLI'dan secret olarak girilir.
+services:
+  - type: web
+    name: sahne-realtime
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./services/realtime/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: REALTIME_PORT
+        value: "4100"
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
