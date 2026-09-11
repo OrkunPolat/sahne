@@ -8,5 +8,5 @@ config({ path: resolve(pkgDir, "../../.env") });
 
 export const env = {
   DATABASE_URL: process.env.DATABASE_URL ?? "postgres://sahne:sahne@localhost:5433/sahne",
-  PORT: Number(process.env.REALTIME_PORT ?? 4100),
+  PORT: Number(process.env.REALTIME_PORT ?? process.env.PORT ?? 4100),
 };
